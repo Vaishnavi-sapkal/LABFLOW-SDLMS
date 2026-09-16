@@ -205,14 +205,14 @@ export function PatientRegistration() {
 
   return (
     <PageContainer>
-      <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
+      <div className="grid gap-4 sm:gap-6 2xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid gap-5">
           <StepTracker activeIndex={2} steps={['Identity', 'Medical', 'Consent', 'Register']} />
-          <div className="flex border-b border-border" role="tablist" aria-label="Patient registration options">
-            <button aria-selected={!accountTab} className={`border-b-2 px-4 py-3 text-sm font-semibold ${!accountTab ? 'border-brand-600 text-brand-700' : 'border-transparent text-ink-muted hover:text-ink'}`} onClick={() => setSearchParams({})} role="tab" type="button">Patient</button>
-            <button aria-selected={accountTab} className={`border-b-2 px-4 py-3 text-sm font-semibold ${accountTab ? 'border-brand-600 text-brand-700' : 'border-transparent text-ink-muted hover:text-ink'}`} onClick={() => setSearchParams({ tab: 'account' })} role="tab" type="button">Register Patient Account</button>
+          <div className="flex overflow-x-auto border-b border-border" role="tablist" aria-label="Patient registration options">
+            <button aria-selected={!accountTab} className={`shrink-0 border-b-2 px-3 py-3 text-sm font-semibold sm:px-4 ${!accountTab ? 'border-brand-600 text-brand-700' : 'border-transparent text-ink-muted hover:text-ink'}`} onClick={() => setSearchParams({})} role="tab" type="button">Patient</button>
+            <button aria-selected={accountTab} className={`shrink-0 border-b-2 px-3 py-3 text-sm font-semibold sm:px-4 ${accountTab ? 'border-brand-600 text-brand-700' : 'border-transparent text-ink-muted hover:text-ink'}`} onClick={() => setSearchParams({ tab: 'account' })} role="tab" type="button">Register Patient Account</button>
           </div>
-          <section className="card p-5"><h2 className="mb-3 text-base font-semibold">Find an existing patient</h2><SearchBar aria-label="Search existing patients" onChange={(event) => setExistingPatientSearch(event.target.value)} placeholder="Search name, patient ID, or mobile" value={existingPatientSearch} />{patientSearchError ? <p className="mt-2 text-sm text-danger">{patientSearchError}</p> : null}{existingPatients.length ? <div className="mt-3 grid gap-2">{existingPatients.map((patient) => <button className="rounded-ui border border-border px-3 py-2 text-left text-sm hover:bg-surface-muted" key={patient._id ?? patient.patientId} onClick={() => selectExistingPatient(patient)} type="button"><span className="font-semibold">{patient.fullName}</span><span className="ml-2 text-ink-muted">{patient.patientId} · {patient.mobile}</span></button>)}</div> : existingPatientSearch ? <p className="mt-2 text-sm text-ink-muted">No matching patients.</p> : null}</section>
+          <section className="card p-4 sm:p-5"><h2 className="mb-3 text-base font-semibold">Find an existing patient</h2><SearchBar aria-label="Search existing patients" onChange={(event) => setExistingPatientSearch(event.target.value)} placeholder="Search name, patient ID, or mobile" value={existingPatientSearch} />{patientSearchError ? <p className="mt-2 text-sm text-danger">{patientSearchError}</p> : null}{existingPatients.length ? <div className="mt-3 grid gap-2">{existingPatients.map((patient) => <button className="rounded-ui border border-border px-3 py-2 text-left text-sm hover:bg-surface-muted" key={patient._id ?? patient.patientId} onClick={() => selectExistingPatient(patient)} type="button"><span className="block truncate font-semibold">{patient.fullName}</span><span className="block truncate text-ink-muted sm:inline sm:ml-2">{patient.patientId} · {patient.mobile}</span></button>)}</div> : existingPatientSearch ? <p className="mt-2 text-sm text-ink-muted">No matching patients.</p> : null}</section>
           <FormSection title="Personal Details" description="Capture verified patient demographics.">
             <Field label="Full Name"><Input value={form.fullName} onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))} /></Field>
             <Field label="Date of Birth"><Input value={form.dateOfBirth} onChange={(event) => setForm((current) => ({ ...current, dateOfBirth: event.target.value }))} type="date" /></Field>
@@ -236,7 +236,7 @@ export function PatientRegistration() {
             <Field label="Aadhaar ID"><Input inputMode="numeric" maxLength={12} value={form.governmentId} onChange={(event) => setForm((current) => ({ ...current, governmentId: event.target.value.replace(/\D/g, '') }))} /></Field>
             <Field label="Emergency Contact"><Input inputMode="tel" value={form.emergencyContact} onChange={(event) => setForm((current) => ({ ...current, emergencyContact: event.target.value }))} /></Field>
           </FormSection>
-          <section className="card p-5">
+          <section className="card p-4 sm:p-5">
             <h2 className="text-base font-semibold">Consent</h2>
             <div className="mt-4 grid gap-3 text-sm text-ink-muted">
               <label className="flex items-start gap-3"><Checkbox checked={form.consentToTesting} onChange={(event) => setForm((current) => ({ ...current, consentToTesting: event.target.checked }))} /> Patient consent received for diagnostic testing and digital report delivery.</label>
@@ -249,7 +249,7 @@ export function PatientRegistration() {
             </FormSection>
           ) : null}
         </div>
-        <aside className="card h-fit p-5 xl:sticky xl:top-24">
+        <aside className="card h-fit p-4 sm:p-5 2xl:sticky 2xl:top-24">
           <div className="flex items-center justify-between"><h2 className="text-base font-semibold">Patient Preview</h2><StatusBadge tone={registered ? 'success' : 'warning'}>{registered ? 'Registered' : 'Draft'}</StatusBadge></div>
           <div className="mt-5 rounded-ui bg-brand-50 p-4"><p className="text-lg font-semibold text-brand-700">{previewPatient.fullName}</p><p className="text-sm text-ink-muted">{displayGender(previewPatient.gender)}, {getAge(previewPatient.dateOfBirth)} years | {previewPatient.bloodGroup ?? 'Not specified'}</p></div>
           <div className="mt-5 grid gap-3 text-sm"><p><span className="text-ink-muted">Patient ID:</span> {registeredPatient?.patientId ?? 'Generated on save'}</p><p><span className="text-ink-muted">City:</span> {previewPatient.city}</p><p><span className="text-ink-muted">Phone:</span> {previewPatient.mobile}</p><p className="flex items-center gap-2 text-success"><CheckCircle2 size={16} /> {registered ? 'Available for booking' : 'Ready for registration'}</p></div>

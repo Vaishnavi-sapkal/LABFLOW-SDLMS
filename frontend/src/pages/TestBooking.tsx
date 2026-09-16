@@ -246,9 +246,9 @@ export function TestBooking() {
               <div className="font-mono text-lg font-bold text-brand-600">{createdBooking.bookingId}</div>
               <div className="mt-2 text-sm font-semibold text-ink">Total amount: {formatInr(createdBooking.totalAmount)}</div>
             </div>
-            <div className="flex justify-center gap-2.5">
-              <Button variant="secondary" onClick={() => setCreatedBooking(null)}>New Booking</Button>
-              <Button onClick={() => navigate(createdBooking._id ? `/billing?bookingId=${createdBooking._id}` : '/billing')}>Generate Bill</Button>
+            <div className="grid gap-2.5 sm:flex sm:justify-center">
+              <Button className="w-full sm:w-auto" variant="secondary" onClick={() => setCreatedBooking(null)}>New Booking</Button>
+              <Button className="w-full sm:w-auto" onClick={() => navigate(createdBooking._id ? `/billing?bookingId=${createdBooking._id}` : '/billing')}>Generate Bill</Button>
             </div>
           </div>
         </div>
@@ -258,14 +258,14 @@ export function TestBooking() {
 
   return (
     <PageContainer>
-      <div className="grid gap-6">
+      <div className="grid gap-4 sm:gap-6">
         <header>
           <h1 className="mb-1 text-[22px] font-extrabold leading-tight text-ink">Test Booking</h1>
           <p className="text-[13.5px] text-ink-muted">Search and select tests or packages, assign a doctor, and schedule a collection slot</p>
           {dataError && <p className="mt-2 text-sm text-danger">{dataError}</p>}
         </header>
 
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid gap-4 sm:gap-5 2xl:grid-cols-[minmax(0,1fr)_340px]">
           <section className="min-w-0">
             <div className="mb-4 rounded-card border border-border bg-white px-5 py-4">
               <div className="flex items-center gap-3">
@@ -331,7 +331,7 @@ export function TestBooking() {
             {activeTab === 'packages' && (
               <div className="grid gap-3">
                 {packages.map((pkg) => (
-                  <article className="rounded-card border border-border bg-white p-5" key={pkg.id}>
+                  <article className="rounded-card border border-border bg-white p-4 sm:p-5" key={pkg.id}>
                     <div className="mb-3 flex items-start justify-between gap-4">
                       <div>
                         <h2 className="mb-1 text-[15px] font-bold text-ink">{pkg.name}</h2>
@@ -352,7 +352,7 @@ export function TestBooking() {
             )}
           </section>
 
-          <aside className="grid h-fit gap-4 xl:sticky xl:top-24">
+          <aside className="grid h-fit gap-4 2xl:sticky 2xl:top-24">
             <CartPanel cartItems={cartItems} onRemove={toggleCart} total={catalogTotal} />
             <DoctorPanel doctors={doctorDocuments.filter((doctor) => doctor.isActive !== false)} pendingCounts={pendingCounts} selectedDoctorId={selectedDoctorId} onSelect={setSelectedDoctorId} />
             <SlotPanel availability={slotAvailability} scheduledDate={scheduledDate} onDateChange={setScheduledDate} selectedSlot={selectedSlot} onSelect={setSelectedSlot} />
@@ -399,7 +399,7 @@ function TestCatalogCard({ inCart, onToggle, test }: { inCart: boolean; onToggle
 
 function CartPanel({ cartItems, onRemove, total }: { cartItems: CatalogTest[]; onRemove: (id: string) => void; total: number }) {
   return (
-    <section className="rounded-card border border-border bg-white p-5">
+    <section className="rounded-card border border-border bg-white p-4 sm:p-5">
       <h2 className="mb-3.5 text-[15px] font-bold text-ink">Cart ({cartItems.length} test{cartItems.length === 1 ? '' : 's'})</h2>
       {cartItems.length === 0 ? (
         <div className="py-6 text-center text-[13px] text-ink-muted">No tests added yet</div>
@@ -431,7 +431,7 @@ function CartPanel({ cartItems, onRemove, total }: { cartItems: CatalogTest[]; o
 
 function DoctorPanel({ doctors, pendingCounts, selectedDoctorId, onSelect }: { doctors: DoctorDocument[]; pendingCounts: Record<string, number>; selectedDoctorId: string; onSelect: (id: string) => void }) {
   return (
-    <section className="rounded-card border border-border bg-white p-5">
+    <section className="rounded-card border border-border bg-white p-4 sm:p-5">
       <h2 className="mb-3 text-sm font-bold text-ink">Assign Doctor</h2>
       <div className="grid gap-1.5">
         {doctors.slice(0, 3).map((doctor) => {
@@ -461,7 +461,7 @@ function DoctorPanel({ doctors, pendingCounts, selectedDoctorId, onSelect }: { d
 
 function SlotPanel({ availability, scheduledDate, onDateChange, selectedSlot, onSelect }: { availability: SlotAvailability[]; scheduledDate: string; onDateChange: (date: string) => void; selectedSlot: string; onSelect: (slot: string) => void }) {
   return (
-    <section className="rounded-card border border-border bg-white p-5">
+    <section className="rounded-card border border-border bg-white p-4 sm:p-5">
       <h2 className="mb-1 text-sm font-bold text-ink">Schedule Slot</h2>
       <Input className="mb-3 h-9" min={todayIsoDate()} onChange={(event) => onDateChange(event.target.value)} type="date" value={scheduledDate} />
       <div className="grid grid-cols-3 gap-1.5">

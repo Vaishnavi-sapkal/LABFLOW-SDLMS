@@ -147,9 +147,9 @@ export function Billing() {
 
   return (
     <PageContainer>
-      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-        <section className="card p-5">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="text-base font-semibold">Itemized bill</h2><Tabs items={[...methods]} onChange={setMethod} value={method} /></div>
+      <div className="grid gap-4 sm:gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]">
+        <section className="card p-4 sm:p-5">
+          <div className="mb-4 grid gap-3 sm:flex sm:flex-wrap sm:items-center sm:justify-between"><h2 className="text-base font-semibold">Itemized bill</h2><Tabs items={[...methods]} onChange={setMethod} value={method} /></div>
           {bookingsError && <p className="mb-4 text-sm text-danger">{bookingsError}</p>}
           <label className="mb-5 grid max-w-md gap-1.5 text-xs font-medium text-ink-muted">Booking to bill
             <Select onChange={(event) => setSelectedBookingId(event.target.value)} value={selectedBookingId}>
@@ -160,7 +160,7 @@ export function Billing() {
             <DataTable columns={['Test', 'Qty', 'Price', 'Discount', 'Amount']}>
               {invoice.items.map((item) => <tr className="hover:bg-surface-muted" key={item.testId}><DataCell>{item.name}</DataCell><DataCell>{item.qty}</DataCell><DataCell>{formatInr(item.rate)}</DataCell><DataCell>{formatInr(item.rate * item.qty - item.amount)}</DataCell><DataCell className="font-semibold">{formatInr(item.amount)}</DataCell></tr>)}
             </DataTable>
-            <div className="mt-5 flex max-w-sm items-end gap-2"><label className="grid flex-1 gap-1.5 text-xs font-medium text-ink-muted">Discount (%)<Input disabled={paid || processing} max="100" min="0" onChange={(event) => setDiscountPercent(event.target.value)} type="number" value={discountPercent} /></label><Button disabled={paid || processing} onClick={() => void applyDiscount()} size="sm" variant="outline">Apply</Button></div>
+            <div className="mt-5 grid max-w-sm gap-2 sm:flex sm:items-end"><label className="grid gap-1.5 text-xs font-medium text-ink-muted sm:flex-1">Discount (%)<Input disabled={paid || processing} max="100" min="0" onChange={(event) => setDiscountPercent(event.target.value)} type="number" value={discountPercent} /></label><Button className="w-full sm:w-auto" disabled={paid || processing} onClick={() => void applyDiscount()} size="sm" variant="outline">Apply</Button></div>
             {method === 'UPI' && <label className="mt-4 grid max-w-sm gap-1.5 text-xs font-medium text-ink-muted">UPI ID<Input disabled={paid || processing} onChange={(event) => setUpiId(event.target.value)} placeholder="name@bank" value={upiId} /></label>}
             <div className="ml-auto mt-5 grid max-w-sm gap-2 text-sm">
               <div className="flex justify-between"><span className="text-ink-muted">Subtotal</span><span>{formatInr(invoice.subtotal)}</span></div>
@@ -169,7 +169,7 @@ export function Billing() {
               <div className="flex justify-between border-t border-border pt-3 text-base font-semibold"><span>Total</span><span>{formatInr(invoice.totalAmount)}</span></div>
             </div>
             {error && <p className="mt-4 text-sm text-danger">{error}</p>}
-            <div className="mt-5 flex justify-end gap-3"><Button icon={<Printer size={16} />} variant="outline">Print</Button>{invoice.status !== 'paid' && invoice.status !== 'cancelled' && <Button disabled={processing} onClick={() => void handleCancelInvoice()} variant="danger-outline">Cancel invoice</Button>}<Button disabled={paid || processing || (method === 'UPI' && !upiId.trim())} icon={<CreditCard size={16} />} onClick={() => void collectPayment()}>{paid ? 'Payment Collected' : `Collect via ${method}`}</Button></div>
+            <div className="mt-5 grid gap-2 sm:flex sm:flex-wrap sm:justify-end"><Button className="w-full sm:w-auto" icon={<Printer size={16} />} variant="outline">Print</Button>{invoice.status !== 'paid' && invoice.status !== 'cancelled' && <Button className="w-full sm:w-auto" disabled={processing} onClick={() => void handleCancelInvoice()} variant="danger-outline">Cancel invoice</Button>}<Button className="w-full sm:w-auto" disabled={paid || processing || (method === 'UPI' && !upiId.trim())} icon={<CreditCard size={16} />} onClick={() => void collectPayment()}>{paid ? 'Payment Collected' : `Collect via ${method}`}</Button></div>
           </> : <p className="py-10 text-center text-sm text-ink-muted">Select a booking to create an invoice.</p>}
           {!invoice && error && <p className="mt-4 text-sm text-danger">{error}</p>}
         </section>
