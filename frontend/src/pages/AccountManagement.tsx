@@ -75,6 +75,7 @@ export function AccountManagement() {
         const { patient } = await createOrLinkPatientAccount({
           fullName: form.name, email: form.email, password: form.password, mobile: form.mobile,
           dateOfBirth: form.dateOfBirth, gender: form.gender, bloodGroup: form.bloodGroup, city: form.city || undefined,
+          consentToTesting: true, consentToDetailsVerification: true,
           rollbackAccount: deleteAccount,
         });
         setMessage(`${patient.fullName}'s patient account was created and linked to ${patient.patientId}.`);

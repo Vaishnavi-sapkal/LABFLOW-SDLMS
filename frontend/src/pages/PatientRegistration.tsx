@@ -9,7 +9,7 @@ import { SearchBar } from '../components/ui/SearchBar';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { PageContainer } from '../components/layout/PageContainer';
 import { StepTracker } from '../components/laboratory/StepTracker';
-import { createPatient, listPatients, updatePatient, type CreatedPatient, type PatientGender } from '../api/patients';
+import { createPatient, listPatients, updatePatient, type BloodGroup, type CreatedPatient, type PatientGender } from '../api/patients';
 import { createOrLinkPatientAccount } from '../api/patientAccountProvisioning';
 import { useAuth } from '../app/AuthContext';
 
@@ -17,15 +17,20 @@ interface PatientFormState {
   fullName: string;
   dateOfBirth: string;
   gender: PatientGender;
-  bloodGroup: 'A+' | 'B+' | 'O+' | 'AB+';
+  bloodGroup: BloodGroup;
   mobile: string;
   email: string;
   address: string;
   city: string;
+  state: string;
   pincode: string;
   referringDoctor: string;
   governmentId: string;
   emergencyContact: string;
+  conditions: string;
+  allergies: string;
+  consentToTesting: boolean;
+  consentToDetailsVerification: boolean;
 }
 
 const initialForm: PatientFormState = {
@@ -37,11 +42,20 @@ const initialForm: PatientFormState = {
   email: '',
   address: '',
   city: '',
+  state: '',
   pincode: '',
   referringDoctor: '',
   governmentId: '',
   emergencyContact: '',
+  conditions: '',
+  allergies: '',
+  consentToTesting: true,
+  consentToDetailsVerification: true,
 };
+
+function toList(value: string) {
+  return value.split(',').map((item) => item.trim()).filter(Boolean);
+}
 
 function getAge(dateOfBirth: string) {
   const date = new Date(dateOfBirth);
@@ -87,7 +101,26 @@ export function PatientRegistration() {
   }, [existingPatientSearch]);
 
   const selectExistingPatient = (patient: CreatedPatient) => {
-    setForm((current) => ({ ...current, fullName: patient.fullName, dateOfBirth: patient.dateOfBirth.slice(0, 10), gender: patient.gender, bloodGroup: (patient.bloodGroup ?? current.bloodGroup) as PatientFormState['bloodGroup'], mobile: patient.mobile, email: patient.email ?? '', city: patient.city ?? '', governmentId: patient.aadhaarNumber ?? '' }));
+    setForm((current) => ({
+      ...current,
+      fullName: patient.fullName,
+      dateOfBirth: patient.dateOfBirth.slice(0, 10),
+      gender: patient.gender,
+      bloodGroup: patient.bloodGroup ?? current.bloodGroup,
+      mobile: patient.mobile,
+      email: patient.email ?? '',
+      address: patient.address ?? '',
+      city: patient.city ?? '',
+      state: patient.state ?? '',
+      pincode: patient.pincode ?? '',
+      referringDoctor: patient.referringDoctor ?? '',
+      governmentId: patient.aadhaarNumber ?? '',
+      emergencyContact: patient.emergencyContact ?? '',
+      conditions: (patient.conditions ?? []).join(', '),
+      allergies: (patient.allergies ?? []).join(', '),
+      consentToTesting: patient.consentToTesting ?? current.consentToTesting,
+      consentToDetailsVerification: patient.consentToDetailsVerification ?? current.consentToDetailsVerification,
+    }));
     setExistingPatientSearch('');
     setExistingPatients([]);
   };
@@ -95,17 +128,56 @@ export function PatientRegistration() {
   const handleRegister = async () => {
     setRegistrationError('');
 
+    const dateOfBirth = new Date(form.dateOfBirth);
+    if (!form.fullName.trim() || Number.isNaN(dateOfBirth.getTime()) || dateOfBirth > new Date()) {
+      setRegistrationError('Enter the patient name and a valid date of birth that is not in the future.');
+      return;
+    }
+    if (!/^\+?[1-9]\d{7,14}$/.test(form.mobile.trim())) {
+      setRegistrationError('Enter a valid mobile number.');
+      return;
+    }
+    if (form.governmentId && !/^\d{12}$/.test(form.governmentId)) {
+      setRegistrationError('Aadhaar ID must contain exactly 12 digits.');
+      return;
+    }
+    if (form.pincode && !/^\d{6}$/.test(form.pincode)) {
+      setRegistrationError('Pincode must contain exactly 6 digits.');
+      return;
+    }
+    if (form.emergencyContact && !/^\+?[1-9]\d{7,14}$/.test(form.emergencyContact.trim())) {
+      setRegistrationError('Enter a valid emergency contact number.');
+      return;
+    }
+    if (!form.consentToTesting || !form.consentToDetailsVerification) {
+      setRegistrationError('Both consent confirmations are required before registration.');
+      return;
+    }
+
+    const patientPayload = {
+      fullName: form.fullName.trim(),
+      dateOfBirth: form.dateOfBirth,
+      gender: form.gender,
+      bloodGroup: form.bloodGroup,
+      aadhaarNumber: form.governmentId || undefined,
+      mobile: form.mobile.trim(),
+      email: form.email.trim() || undefined,
+      address: form.address.trim() || undefined,
+      city: form.city.trim() || undefined,
+      state: form.state.trim() || undefined,
+      pincode: form.pincode || undefined,
+      referringDoctor: form.referringDoctor.trim() || undefined,
+      emergencyContact: form.emergencyContact.trim() || undefined,
+      conditions: toList(form.conditions),
+      allergies: toList(form.allergies),
+      consentToTesting: form.consentToTesting,
+      consentToDetailsVerification: form.consentToDetailsVerification,
+    };
+
     try {
       if (createPatientAccount) {
         const { patient } = await createOrLinkPatientAccount({
-          fullName: form.fullName,
-          dateOfBirth: form.dateOfBirth,
-          gender: form.gender,
-          bloodGroup: form.bloodGroup,
-          aadhaarNumber: form.governmentId || undefined,
-          mobile: form.mobile,
-          email: form.email || undefined,
-          city: form.city || undefined,
+          ...patientPayload,
           password: accountPassword,
         });
         setRegisteredPatient(patient);
@@ -113,18 +185,8 @@ export function PatientRegistration() {
         return;
       }
 
-      const patientPayload = {
-        fullName: form.fullName,
-        dateOfBirth: form.dateOfBirth,
-        gender: form.gender,
-        bloodGroup: form.bloodGroup,
-        aadhaarNumber: form.governmentId || undefined,
-        mobile: form.mobile,
-        email: form.email || undefined,
-        city: form.city || undefined,
-      };
-      const mobileMatches = await listPatients(form.mobile);
-      const existingPatient = mobileMatches.find((patient) => patient.mobile.replace(/\D/g, '') === form.mobile.replace(/\D/g, ''));
+      const mobileMatches = await listPatients(patientPayload.mobile);
+      const existingPatient = mobileMatches.find((patient) => patient.mobile.replace(/\D/g, '') === patientPayload.mobile.replace(/\D/g, ''));
       if (existingPatient && !existingPatient._id) {
         throw new Error('The matched patient profile cannot be updated because it has no database ID.');
       }
@@ -155,25 +217,30 @@ export function PatientRegistration() {
             <Field label="Full Name"><Input value={form.fullName} onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))} /></Field>
             <Field label="Date of Birth"><Input value={form.dateOfBirth} onChange={(event) => setForm((current) => ({ ...current, dateOfBirth: event.target.value }))} type="date" /></Field>
             <Field label="Gender"><Select value={form.gender} onChange={(event) => setForm((current) => ({ ...current, gender: event.target.value as PatientGender }))}><option value="female">Female</option><option value="male">Male</option><option value="other">Other</option></Select></Field>
-            <Field label="Blood Group"><Select value={form.bloodGroup} onChange={(event) => setForm((current) => ({ ...current, bloodGroup: event.target.value as PatientFormState['bloodGroup'] }))}><option>B+</option><option>O+</option><option>A+</option><option>AB+</option></Select></Field>
+            <Field label="Blood Group"><Select value={form.bloodGroup} onChange={(event) => setForm((current) => ({ ...current, bloodGroup: event.target.value as BloodGroup }))}><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></Select></Field>
           </FormSection>
           <FormSection title="Contact Information">
             <Field label="Mobile Number"><Input value={form.mobile} onChange={(event) => setForm((current) => ({ ...current, mobile: event.target.value }))} /></Field>
             <Field label="Email"><Input value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} /></Field>
             <Field label="Address"><Textarea value={form.address} onChange={(event) => setForm((current) => ({ ...current, address: event.target.value }))} /></Field>
             <Field label="City"><Input value={form.city} onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))} /></Field>
-            <Field label="Pincode"><Input value={form.pincode} onChange={(event) => setForm((current) => ({ ...current, pincode: event.target.value }))} /></Field>
+            <Field label="State"><Input value={form.state} onChange={(event) => setForm((current) => ({ ...current, state: event.target.value }))} /></Field>
+            <Field label="Pincode"><Input inputMode="numeric" maxLength={6} value={form.pincode} onChange={(event) => setForm((current) => ({ ...current, pincode: event.target.value.replace(/\D/g, '') }))} /></Field>
+          </FormSection>
+          <FormSection title="Medical History" description="Separate multiple entries with commas.">
+            <Field label="Existing Conditions"><Textarea onChange={(event) => setForm((current) => ({ ...current, conditions: event.target.value }))} placeholder="e.g. Diabetes, hypertension" value={form.conditions} /></Field>
+            <Field label="Allergies"><Textarea onChange={(event) => setForm((current) => ({ ...current, allergies: event.target.value }))} placeholder="e.g. Penicillin, peanuts" value={form.allergies} /></Field>
           </FormSection>
           <FormSection title="Referral & Identification">
             <Field label="Referring Doctor"><Input value={form.referringDoctor} onChange={(event) => setForm((current) => ({ ...current, referringDoctor: event.target.value }))} /></Field>
-            <Field label="Aadhaar ID"><Input value={form.governmentId} onChange={(event) => setForm((current) => ({ ...current, governmentId: event.target.value }))} /></Field>
-            <Field label="Emergency Contact"><Input value={form.emergencyContact} onChange={(event) => setForm((current) => ({ ...current, emergencyContact: event.target.value }))} /></Field>
+            <Field label="Aadhaar ID"><Input inputMode="numeric" maxLength={12} value={form.governmentId} onChange={(event) => setForm((current) => ({ ...current, governmentId: event.target.value.replace(/\D/g, '') }))} /></Field>
+            <Field label="Emergency Contact"><Input inputMode="tel" value={form.emergencyContact} onChange={(event) => setForm((current) => ({ ...current, emergencyContact: event.target.value }))} /></Field>
           </FormSection>
           <section className="card p-5">
             <h2 className="text-base font-semibold">Consent</h2>
             <div className="mt-4 grid gap-3 text-sm text-ink-muted">
-              <label className="flex items-start gap-3"><Checkbox defaultChecked /> Patient consent received for diagnostic testing and digital report delivery.</label>
-              <label className="flex items-start gap-3"><Checkbox defaultChecked /> Emergency contact and referral details verified.</label>
+              <label className="flex items-start gap-3"><Checkbox checked={form.consentToTesting} onChange={(event) => setForm((current) => ({ ...current, consentToTesting: event.target.checked }))} /> Patient consent received for diagnostic testing and digital report delivery.</label>
+              <label className="flex items-start gap-3"><Checkbox checked={form.consentToDetailsVerification} onChange={(event) => setForm((current) => ({ ...current, consentToDetailsVerification: event.target.checked }))} /> Emergency contact and referral details verified.</label>
             </div>
           </section>
           {(role === 'Admin' || role === 'Receptionist') && accountTab ? (

@@ -12,10 +12,16 @@ export interface CreatePatientDto {
   aadhaarNumber?: string;
   mobile: string;
   email?: string;
+  address?: string;
   city?: string;
   state?: string;
+  pincode?: string;
+  referringDoctor?: string;
+  emergencyContact?: string;
   conditions?: string[];
   allergies?: string[];
+  consentToTesting: boolean;
+  consentToDetailsVerification: boolean;
   userId?: string;
 }
 

@@ -23,11 +23,14 @@ export class Patient {
   @Prop({ trim: true })
   aadhaarNumber?: string;
 
-  @Prop({ required: true, trim: true })
+  @Prop({ required: true, trim: true, unique: true, index: true })
   mobile!: string;
 
   @Prop({ trim: true, lowercase: true })
   email?: string;
+
+  @Prop({ trim: true })
+  address?: string;
 
   @Prop({ trim: true })
   city?: string;
@@ -35,11 +38,26 @@ export class Patient {
   @Prop({ trim: true })
   state?: string;
 
+  @Prop({ trim: true })
+  pincode?: string;
+
+  @Prop({ trim: true })
+  referringDoctor?: string;
+
+  @Prop({ trim: true })
+  emergencyContact?: string;
+
   @Prop({ type: [String], default: [] })
   conditions!: string[];
 
   @Prop({ type: [String], default: [] })
   allergies!: string[];
+
+  @Prop({ default: false })
+  consentToTesting!: boolean;
+
+  @Prop({ default: false })
+  consentToDetailsVerification!: boolean;
 
   // This is the auth-service User _id only; patient-service does not join across databases.
   @Prop({ trim: true })

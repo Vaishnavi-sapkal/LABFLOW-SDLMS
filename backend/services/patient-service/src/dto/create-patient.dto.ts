@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsDate,
   IsEmail,
   IsEnum,
@@ -44,6 +45,11 @@ export class CreatePatientDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(300)
+  address?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(100)
   city?: string;
 
@@ -51,6 +57,21 @@ export class CreatePatientDto {
   @IsString()
   @MaxLength(100)
   state?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{6}$/, { message: 'pincode must be exactly 6 digits' })
+  pincode?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  referringDoctor?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\+?[1-9]\d{7,14}$/, { message: 'emergencyContact must be a valid phone number' })
+  emergencyContact?: string;
 
   @IsOptional()
   @IsArray()
@@ -61,6 +82,12 @@ export class CreatePatientDto {
   @IsArray()
   @IsString({ each: true })
   allergies?: string[];
+
+  @IsBoolean()
+  consentToTesting!: boolean;
+
+  @IsBoolean()
+  consentToDetailsVerification!: boolean;
 
   @IsOptional()
   @IsString()
