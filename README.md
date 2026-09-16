@@ -1,23 +1,7 @@
-# LabFlow — Smart Diagnostic Lab Management System (SDLMS)
+# LabFlow —SDLMS
 
 LabFlow is a microservices-based platform for managing the end-to-end workflow of a diagnostic laboratory: patient registration, doctor referrals, test bookings, sample collection, results, verification, billing, notifications, reporting, and a unified dashboard — all fronted by a single API gateway and a React web app.
 
-## Table of Contents
-
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
-  - [1. Clone the repository](#1-clone-the-repository)
-  - [2. Configure environment variables](#2-configure-environment-variables)
-  - [3. Run with Docker Compose](#3-run-with-docker-compose)
-  - [4. Run the frontend](#4-run-the-frontend)
-- [Environment Variables](#environment-variables)
-- [Testing](#testing)
-- [Validating the Project Structure](#validating-the-project-structure)
-- [Deployment](#deployment)
-- [Contributing](#contributing)
 
 ## Architecture
 
