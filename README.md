@@ -35,7 +35,7 @@ Additional services — **Sample**, **Result**, **Verification**, **Billing**, *
 | API Gateway      | NestJS + `http-proxy-middleware`                            |
 | Database         | MongoDB (Atlas in Docker/prod, local Mongo optional)        |
 | Notifications    | SMTP-based email notifications                              |
-| Testing          | Jest, ts-jest                                                |
+| Testing          | Swagger, Postman                                               |
 | Containerization | Docker, Docker Compose                                       |
 | Deployment       | Render (`render.yaml`), Firebase Hosting (frontend)          |
 | Monorepo         | npm workspaces                                                |
