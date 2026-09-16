@@ -31,7 +31,7 @@ Additional services — **Sample**, **Result**, **Verification**, **Billing**, *
 | Layer            | Technology                                                |
 |------------------|------------------------------------------------------------|
 | Frontend         | React 18, TypeScript, Vite, Tailwind CSS, React Router     |
-| Backend services | NestJS, TypeScript, JWT auth (Passport)                    |
+| Backend services | NestJS, TypeScript, JWT auth                    |
 | API Gateway      | NestJS + `http-proxy-middleware`                            |
 | Database         | MongoDB (Atlas in Docker/prod, local Mongo optional)        |
 | Notifications    | SMTP-based email notifications                              |
