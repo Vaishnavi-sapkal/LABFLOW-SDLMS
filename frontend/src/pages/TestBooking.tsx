@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Check, Clock3, Plus, Search, UserRound, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { PageContainer } from '../components/layout/PageContainer';
@@ -39,6 +40,7 @@ function calculateAge(dateOfBirth: string): number {
 }
 
 export function TestBooking() {
+  const navigate = useNavigate();
   const [patients, setPatients] = useState<CreatedPatient[]>([]);
   const [testDocuments, setTestDocuments] = useState<TestDocument[]>([]);
   const [doctorDocuments, setDoctorDocuments] = useState<DoctorDocument[]>([]);
@@ -246,7 +248,7 @@ export function TestBooking() {
             </div>
             <div className="flex justify-center gap-2.5">
               <Button variant="secondary" onClick={() => setCreatedBooking(null)}>New Booking</Button>
-              <Button>Generate Bill</Button>
+              <Button onClick={() => navigate(createdBooking._id ? `/billing?bookingId=${createdBooking._id}` : '/billing')}>Generate Bill</Button>
             </div>
           </div>
         </div>

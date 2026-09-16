@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CreditCard, Printer } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { ReceiptPreview } from '../components/laboratory/ReceiptPreview';
 import { Button } from '../components/ui/Button';
 import { DataCell, DataTable } from '../components/ui/DataTable';
@@ -19,6 +20,8 @@ const paymentMethodByTab: Record<(typeof methods)[number], PaymentMethod> = {
 };
 
 export function Billing() {
+  const [searchParams] = useSearchParams();
+  const requestedBookingId = searchParams.get('bookingId');
   const [method, setMethod] = useState<(typeof methods)[number]>('UPI');
   const [bookings, setBookings] = useState<CreatedBooking[]>([]);
   const [bookingsError, setBookingsError] = useState('');
@@ -42,7 +45,11 @@ export function Billing() {
         if (!active) return;
 
         setBookings(loadedBookings);
-        setSelectedBookingId((current) => current || loadedBookings[0]?._id || '');
+        setSelectedBookingId((current) => (
+          requestedBookingId && loadedBookings.some((booking) => booking._id === requestedBookingId)
+            ? requestedBookingId
+            : current || loadedBookings[0]?._id || ''
+        ));
       } catch (requestError) {
         if (active) setBookingsError(requestError instanceof Error ? requestError.message : 'Unable to load bookings. Please try again.');
       }
@@ -50,7 +57,7 @@ export function Billing() {
 
     void loadBookings();
     return () => { active = false; };
-  }, []);
+  }, [requestedBookingId]);
 
   useEffect(() => {
     if (!selectedBooking) {
