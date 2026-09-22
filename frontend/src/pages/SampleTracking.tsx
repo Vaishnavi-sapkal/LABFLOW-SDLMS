@@ -215,7 +215,7 @@ export function SampleTracking() {
                       const actionFailed = actionError?.id === sample._id;
                       return (
                         <div className="grid gap-2" key={sample._id}>
-                          <SampleCard code={sample.sampleId} patient={`${sample.patientName} | ${sample.priority}`} status={column.title} test={sample.testDisplayName} />
+                          <SampleCard code={sample.sampleId} patient={`${sample.patientName} | ${sample.priority}`} sampleId={sample._id} status={column.title} test={sample.testDisplayName} />
                           {!terminal && (
                             <div className="grid grid-cols-2 gap-2">
                               <button className="h-8 rounded-ui border border-border bg-white text-xs font-semibold text-brand-700 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-60" disabled={updatingId === sample._id} onClick={() => void handleAdvance(sample)} type="button">Advance status</button>

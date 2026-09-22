@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { CreditCard, Printer } from 'lucide-react';
+import { CreditCard, Printer, QrCode } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { ReceiptPreview } from '../components/laboratory/ReceiptPreview';
+import { PaymentQrModal } from '../components/billing/PaymentQrModal';
 import { Button } from '../components/ui/Button';
 import { DataCell, DataTable } from '../components/ui/DataTable';
 import { Input, Select } from '../components/ui/Input';
@@ -32,6 +33,7 @@ export function Billing() {
   const [upiId, setUpiId] = useState('');
   const [error, setError] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [showPaymentQr, setShowPaymentQr] = useState(false);
 
   const selectedBooking = bookings.find((booking) => booking._id === selectedBookingId);
   const paid = invoice?.status === 'paid';
@@ -131,6 +133,21 @@ export function Billing() {
     }
   };
 
+  const markUpiPaymentAsPaid = async () => {
+    if (!invoice || !upiId.trim()) return;
+
+    setProcessing(true);
+    setError('');
+    try {
+      setInvoice(await confirmPayment(invoice._id, 'upi', upiId.trim()));
+      setShowPaymentQr(false);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Unable to collect payment. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleCancelInvoice = async () => {
     if (!invoice || !window.confirm(`Cancel invoice ${invoice.invoiceNo}?`)) return;
 
@@ -169,12 +186,13 @@ export function Billing() {
               <div className="flex justify-between border-t border-border pt-3 text-base font-semibold"><span>Total</span><span>{formatInr(invoice.totalAmount)}</span></div>
             </div>
             {error && <p className="mt-4 text-sm text-danger">{error}</p>}
-            <div className="mt-5 grid gap-2 sm:flex sm:flex-wrap sm:justify-end"><Button className="w-full sm:w-auto" icon={<Printer size={16} />} variant="outline">Print</Button>{invoice.status !== 'paid' && invoice.status !== 'cancelled' && <Button className="w-full sm:w-auto" disabled={processing} onClick={() => void handleCancelInvoice()} variant="danger-outline">Cancel invoice</Button>}<Button className="w-full sm:w-auto" disabled={paid || processing || (method === 'UPI' && !upiId.trim())} icon={<CreditCard size={16} />} onClick={() => void collectPayment()}>{paid ? 'Payment Collected' : `Collect via ${method}`}</Button></div>
+            <div className="mt-5 grid gap-2 sm:flex sm:flex-wrap sm:justify-end"><Button className="w-full sm:w-auto" icon={<Printer size={16} />} variant="outline">Print</Button>{invoice.status === 'draft' && <Button aria-label={`Pay invoice ${invoice.invoiceNo} via UPI`} className="w-full sm:w-auto" icon={<QrCode size={16} />} onClick={() => setShowPaymentQr(true)} title="Pay via UPI" variant="outline">Pay via UPI</Button>}{invoice.status !== 'paid' && invoice.status !== 'cancelled' && <Button className="w-full sm:w-auto" disabled={processing} onClick={() => void handleCancelInvoice()} variant="danger-outline">Cancel invoice</Button>}<Button className="w-full sm:w-auto" disabled={paid || processing || (method === 'UPI' && !upiId.trim())} icon={<CreditCard size={16} />} onClick={() => void collectPayment()}>{paid ? 'Payment Collected' : `Collect via ${method}`}</Button></div>
           </> : <p className="py-10 text-center text-sm text-ink-muted">Select a booking to create an invoice.</p>}
           {!invoice && error && <p className="mt-4 text-sm text-danger">{error}</p>}
         </section>
         <ReceiptPreview invoice={invoice?.invoiceNo ?? 'Invoice pending'} items={(invoice?.items ?? []).map((item) => ({ name: item.name, price: formatInr(item.amount) }))} patient={invoice?.patientName ?? 'Select a booking'} total={formatInr(invoice?.totalAmount ?? 0)} />
       </div>
+      {showPaymentQr && invoice && <PaymentQrModal invoiceId={invoice._id} markingPaid={processing} onClose={() => setShowPaymentQr(false)} onMarkAsPaid={upiId.trim() ? () => void markUpiPaymentAsPaid() : undefined} />}
     </PageContainer>
   );
 }

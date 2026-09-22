@@ -12,6 +12,7 @@ export class BillingController {
   @Post() @ApiOperation({ summary: 'Create a draft invoice from a booking' }) create(@Body() dto: CreateInvoiceDto) { return this.billingService.create(dto); }
   @Get() @InternalService() @ApiOperation({ summary: 'List invoices' }) findAll(@Query('patientId') patientId?: string, @Query('status') status?: string) { return this.billingService.findAll({ patientId, status }); }
   @Get('by-invoice-no/:invoiceNo') @ApiOperation({ summary: 'Get an invoice by number' }) byNo(@Param('invoiceNo') invoiceNo: string) { return this.billingService.findByInvoiceNo(invoiceNo); }
+  @Get(':id/payment-qr') @InternalService() @ApiOperation({ summary: 'Get a UPI payment QR code for an unpaid invoice' }) paymentQr(@Param('id') id: string) { return this.billingService.getPaymentQr(id); }
   @Get(':id') @ApiOperation({ summary: 'Get an invoice by ID' }) findOne(@Param('id') id: string) { return this.billingService.findOne(id); }
   @Patch(':id/discount') @ApiOperation({ summary: 'Update a draft invoice discount' }) discount(@Param('id') id: string, @Body() dto: UpdateDiscountDto) { return this.billingService.updateDiscount(id, dto.discountPercent); }
   @Patch(':id/confirm-payment') @ApiOperation({ summary: 'Confirm payment for a draft invoice' }) pay(@Param('id') id: string, @Body() dto: ConfirmPaymentDto) { return this.billingService.confirmPayment(id, dto); }

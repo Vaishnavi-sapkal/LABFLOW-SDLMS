@@ -3,6 +3,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException, 
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, isValidObjectId, Model } from 'mongoose';
+import * as QRCode from 'qrcode';
 import { firstValueFrom } from 'rxjs';
 import { AdvanceStatusDto } from './dto/advance-status.dto';
 import { CreateSampleDto } from './dto/create-sample.dto';
@@ -56,6 +57,19 @@ export class SampleService {
     const sample = await this.sampleModel.findOne(filter).exec();
     if (!sample) throw new NotFoundException(`Sample ${id} was not found`);
     return sample;
+  }
+
+  async getQrCode(id: string) {
+    const sample = await this.findOne(id);
+    const qrCode = await QRCode.toDataURL(sample.sampleId, { margin: 1, width: 240 });
+    return {
+      sampleId: sample.sampleId,
+      patientName: sample.patientName,
+      testDisplayName: sample.testDisplayName,
+      sampleType: sample.sampleType,
+      collectedAt: sample.collectedAt,
+      qrCode,
+    };
   }
 
   async advance(id: string, dto: AdvanceStatusDto) {

@@ -3,6 +3,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException, 
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
+import * as QRCode from 'qrcode';
 import { firstValueFrom } from 'rxjs';
 import { Invoice, InvoiceDocument, InvoiceItem } from './billing.schema';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
@@ -23,6 +24,19 @@ export class BillingService {
   findAll(filters?: { patientId?: string; status?: string }) { const query: FilterQuery<InvoiceDocument> = {}; if (filters?.patientId) query.patientId = filters.patientId; if (filters?.status) query.status = filters.status; return this.invoiceModel.find(query).sort({ createdAt: -1 }).exec(); }
   async findOne(id: string) { const invoice = await this.invoiceModel.findById(id).exec(); if (!invoice) throw new NotFoundException(`Invoice ${id} was not found`); return invoice; }
   async findByInvoiceNo(invoiceNo: string) { const invoice = await this.invoiceModel.findOne({ invoiceNo }).exec(); if (!invoice) throw new NotFoundException(`Invoice ${invoiceNo} was not found`); return invoice; }
+  async getPaymentQr(id: string) {
+    const invoice = await this.findOne(id);
+    if (invoice.status === 'paid') throw new BadRequestException('A payment QR cannot be generated for a paid invoice');
+
+    const upiId = this.config.get<string>('UPI_ID');
+    if (!upiId) throw new ServiceUnavailableException('UPI_ID is not configured');
+    const payeeName = this.config.get<string>('UPI_PAYEE_NAME') ?? 'LabFlow Diagnostics';
+    const amountDue = invoice.totalAmount;
+    const link = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amountDue}&cu=INR&tn=Invoice-${invoice.invoiceNo}`;
+    const qrCode = await QRCode.toDataURL(link, { margin: 1, width: 240 });
+
+    return { invoiceId: invoice.invoiceNo, amountDue, upiId, qrCode };
+  }
   async updateDiscount(id: string, discountPercent: number) { const invoice = await this.findDraft(id); Object.assign(invoice, this.totals(invoice.subtotal, discountPercent)); return invoice.save(); }
   async confirmPayment(id: string, dto: ConfirmPaymentDto) { const invoice = await this.findDraft(id); invoice.paymentMethod = dto.paymentMethod; invoice.upiId = dto.upiId; invoice.status = 'paid'; invoice.paidAt = new Date(); return invoice.save(); }
   async cancel(id: string) { const invoice = await this.findOne(id); if (invoice.status !== 'draft') throw new BadRequestException('Only draft invoices can be cancelled'); invoice.status = 'cancelled'; return invoice.save(); }

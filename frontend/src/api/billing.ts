@@ -34,6 +34,13 @@ export interface Invoice {
   status: 'draft' | 'paid' | 'cancelled';
 }
 
+export interface InvoicePaymentQr {
+  invoiceId: string;
+  amountDue: number;
+  upiId: string;
+  qrCode: string;
+}
+
 function rethrowApiError(error: unknown, fallback: string): never {
   if (isAxiosError(error)) {
     const message = error.response?.data?.message;
@@ -67,6 +74,15 @@ export async function confirmPayment(id: string, paymentMethod: PaymentMethod, u
     return data;
   } catch (error) {
     return rethrowApiError(error, 'Unable to collect payment. Please try again.');
+  }
+}
+
+export async function getInvoicePaymentQr(id: string): Promise<InvoicePaymentQr> {
+  try {
+    const { data } = await client.get<InvoicePaymentQr>(`/billing/${id}/payment-qr`);
+    return data;
+  } catch (error) {
+    return rethrowApiError(error, 'Unable to generate the payment QR code. Please try again.');
   }
 }
 

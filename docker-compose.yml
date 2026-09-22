@@ -130,8 +130,8 @@ services:
       BOOKING_SERVICE_URL: http://booking-service:3000
       PATIENT_SERVICE_URL: http://patient-service:3000
       DOCTOR_SERVICE_URL: http://doctor-service:3000
+      UPI_ID: ${UPI_ID}
     depends_on: [booking-service, patient-service, doctor-service]
-
   notification-service:
     build:
       context: .

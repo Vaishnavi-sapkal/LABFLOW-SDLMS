@@ -22,6 +22,11 @@ export class SampleController {
   @ApiOperation({ summary: 'List samples grouped for Kanban columns, optionally filtered by patient' })
   findAll(@Query('patientId') patientId?: string) { return this.sampleService.findAllGrouped(patientId); }
 
+  @Get(':id/qr')
+  @InternalService()
+  @ApiOperation({ summary: 'Get a printable QR code label for a sample' })
+  getQr(@Param('id') id: string) { return this.sampleService.getQrCode(id); }
+
   @Get(':id')
   @InternalService()
   @ApiOperation({ summary: 'Get a sample by ID' })

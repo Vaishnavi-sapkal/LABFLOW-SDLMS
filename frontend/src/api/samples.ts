@@ -27,6 +27,15 @@ export interface GroupedSamples {
   rejected: SampleDocument[];
 }
 
+export interface SampleQrLabel {
+  sampleId: string;
+  patientName: string;
+  testDisplayName: string;
+  sampleType: string;
+  collectedAt: string;
+  qrCode: string;
+}
+
 export interface CreateSampleDto {
   bookingId: string;
   patientId: string;
@@ -61,6 +70,15 @@ export async function getSample(id: string): Promise<SampleDocument> {
     return data;
   } catch (error) {
     return messageFrom(error, 'Unable to load sample details. Please try again.');
+  }
+}
+
+export async function getSampleQr(id: string): Promise<SampleQrLabel> {
+  try {
+    const { data } = await client.get<SampleQrLabel>(`/samples/${id}/qr`);
+    return data;
+  } catch (error) {
+    return messageFrom(error, 'Unable to generate the QR label. Please try again.');
   }
 }
 
