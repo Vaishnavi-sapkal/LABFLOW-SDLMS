@@ -6,31 +6,14 @@ import {
 } from 'react';
 import {
   Bell,
-  ChevronDown,
   Menu,
   X,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { useAuth } from '../../app/AuthContext';
 import { useUnreadNotificationsCount } from '../../hooks/useUnreadNotificationsCount';
 import { SearchBar } from '../ui/SearchBar';
-
-const roleLabels = {
-  Admin: 'Administrator',
-  Doctor: 'Dr. Priya Sharma',
-  'Lab Technician': 'Lab Technician',
-  Receptionist: 'Receptionist',
-  Patient: 'Patient',
-} as const;
-
-const roleInitials = {
-  Admin: 'A',
-  Doctor: 'D',
-  'Lab Technician': 'L',
-  Receptionist: 'R',
-  Patient: 'P',
-} as const;
+import { ProfileMenu } from './ProfileMenu';
 
 const searchItems = [
   { label: 'Dashboard', path: '/dashboard' },
@@ -54,7 +37,6 @@ export function Header({
   onMobileMenu,
   onToggleSidebar,
 }: HeaderProps) {
-  const { role } = useAuth();
   const navigate = useNavigate();
   const unreadCount = useUnreadNotificationsCount();
 
@@ -241,31 +223,7 @@ export function Header({
         </button>
 
         {/* PROFILE */}
-        <button
-          className="hidden cursor-pointer items-center gap-2 rounded-md px-2 py-1 transition hover:bg-[rgb(var(--color-muted))] sm:flex"
-          type="button"
-          onClick={() => navigate('/dashboard')}
-        >
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-brand-600 to-accent text-xs font-bold text-white">
-            {roleInitials[role]}
-          </span>
-
-          <span className="text-left">
-            <span className="block text-[13px] font-semibold leading-tight text-ink">
-              {roleLabels[role].split(' ')[0]}
-            </span>
-
-            <span className="block text-[11px] capitalize leading-tight text-ink-muted">
-              {role}
-            </span>
-          </span>
-
-          <ChevronDown
-            size={16}
-            strokeWidth={1.8}
-            className="text-ink-muted"
-          />
-        </button>
+        <ProfileMenu />
 
       </div>
     </header>

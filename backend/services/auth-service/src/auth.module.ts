@@ -120,6 +120,7 @@ import { RegistrationGuard } from './registration.guard';
             role: data.role,
             isActive: true,
             emailVerified: true,
+            mobile: data.mobile,
           });
 
           return {
@@ -128,6 +129,7 @@ import { RegistrationGuard } from './registration.guard';
             email: user.email,
             role: user.role,
             isActive: user.isActive,
+            mobile: user.mobile,
           };
         },
 
@@ -148,6 +150,7 @@ import { RegistrationGuard } from './registration.guard';
             name: data.fullName.trim(),
             email,
             password: await bcrypt.hash(data.password, 10),
+            mobile: data.mobile.trim(),
             role: 'patient',
             isActive: false,
             emailVerified: false,
@@ -279,6 +282,7 @@ import { RegistrationGuard } from './registration.guard';
               email: user.email,
               role: user.role,
               isActive: user.isActive,
+              mobile: user.mobile,
             },
           };
         },
@@ -344,7 +348,7 @@ import { RegistrationGuard } from './registration.guard';
         listUsers: async () => {
           const users = await userModel.find().select('-password').sort({ createdAt: -1 }).lean().exec();
           return users.map((user: any) => ({
-            id: String(user._id), name: user.name, email: user.email, role: user.role, isActive: user.isActive,
+            id: String(user._id), name: user.name, email: user.email, role: user.role, isActive: user.isActive, mobile: user.mobile,
           }));
         },
 
@@ -352,6 +356,51 @@ import { RegistrationGuard } from './registration.guard';
           const user = await userModel.findById(userId).select('-password').lean().exec();
           if (!user || !user.isActive) throw new Error('User account is inactive');
           return { userId: String(user._id), email: user.email, role: user.role };
+        },
+
+        getMe: async (userId: string) => {
+          const user = await userModel.findById(userId).exec();
+          if (!user) throw new NotFoundException('User account was not found');
+          return {
+            id: String(user._id),
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            isActive: user.isActive,
+            mobile: user.mobile,
+          };
+        },
+
+        updateMe: async (userId: string, dto: any) => {
+          const user = await userModel.findById(userId).exec();
+          if (!user) throw new NotFoundException('User account was not found');
+
+          if (dto.name !== undefined) user.name = dto.name;
+          if (dto.mobile !== undefined) user.mobile = dto.mobile;
+
+          await user.save();
+
+          return {
+            id: String(user._id),
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            isActive: user.isActive,
+            mobile: user.mobile,
+          };
+        },
+
+        changePassword: async (userId: string, dto: any) => {
+          const user = await userModel.findById(userId).exec();
+          if (!user) throw new NotFoundException('User account was not found');
+
+          const currentPasswordMatches = await bcrypt.compare(dto.currentPassword, user.password);
+          if (!currentPasswordMatches) throw new Error('Current password is incorrect');
+
+          user.password = await bcrypt.hash(dto.newPassword, 10);
+          await user.save();
+
+          return { message: 'Password updated successfully' };
         },
 
         deleteUser: async (id: string, actorUserId: string) => {

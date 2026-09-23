@@ -160,7 +160,7 @@ export function AccountManagement() {
             <Field label="Qualification"><Input required value={form.qualification} onChange={(event) => setForm((current) => ({ ...current, qualification: event.target.value }))} /></Field>
             <Field label="Registration number"><Input value={form.registrationNumber} onChange={(event) => setForm((current) => ({ ...current, registrationNumber: event.target.value }))} /></Field>
           </FormSection> : null}
-          {form.role === 'patient' ? <FormSection title="Patient profile" description="A profile is created or linked by matching mobile number.">
+          {form.role === 'patient' ? <FormSection title="Patient profile" description="A profile is created for the new patient account.">
             <Field label="Mobile number"><Input required value={form.mobile} onChange={(event) => setForm((current) => ({ ...current, mobile: event.target.value }))} /></Field>
             <Field label="Date of birth"><Input required type="date" value={form.dateOfBirth} onChange={(event) => setForm((current) => ({ ...current, dateOfBirth: event.target.value }))} /></Field>
             <Field label="Gender"><Select value={form.gender} onChange={(event) => setForm((current) => ({ ...current, gender: event.target.value as PatientGender }))}><option value="female">Female</option><option value="male">Male</option><option value="other">Other</option></Select></Field>

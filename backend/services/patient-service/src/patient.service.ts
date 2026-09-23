@@ -4,6 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreatePatientDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
+import { UpdateMyPatientDto } from './dto/update-my-patient.dto';
 import { Patient, PatientDocument } from './patient.schema';
 
 @Injectable()
@@ -22,9 +23,6 @@ export class PatientService {
       } catch (error: any) {
         if (error?.code !== 11000 || attempt === 1) {
           if (error?.code === 11000) {
-            if (error?.keyPattern?.mobile) {
-              throw new ConflictException('A patient with this mobile number already exists');
-            }
             throw new ConflictException('Could not generate a unique patient ID');
           }
           throw error;
@@ -145,6 +143,17 @@ export class PatientService {
       .exec();
     if (!patient) {
       throw new NotFoundException(`Patient ${id} was not found`);
+    }
+    return patient;
+  }
+
+  async updateMyProfile(userId: string, updateMyPatientDto: UpdateMyPatientDto) {
+    const existingPatient = await this.findByUserId(userId);
+    const patient = await this.patientModel
+      .findByIdAndUpdate(existingPatient._id, updateMyPatientDto, { new: true, runValidators: true })
+      .exec();
+    if (!patient) {
+      throw new NotFoundException('No patient profile is linked to this account');
     }
     return patient;
   }

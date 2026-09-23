@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuard
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreatePatientDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
+import { UpdateMyPatientDto } from './dto/update-my-patient.dto';
 import { PatientService } from './patient.service';
 import { InternalService, InternalServiceGuard, Roles, RolesGuard } from './auth';
 
@@ -32,6 +33,13 @@ export class PatientController {
   @ApiOperation({ summary: 'Get the authenticated patient profile' })
   findMe(@Req() request: any) {
     return this.patientService.findByUserId(request.user.userId);
+  }
+
+  @Patch('me')
+  @Roles('patient')
+  @ApiOperation({ summary: 'Update the authenticated patient profile' })
+  updateMe(@Req() request: any, @Body() updateMyPatientDto: UpdateMyPatientDto) {
+    return this.patientService.updateMyProfile(request.user.userId, updateMyPatientDto);
   }
 
   @Get('me/portal')

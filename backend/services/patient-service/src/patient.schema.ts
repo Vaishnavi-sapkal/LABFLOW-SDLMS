@@ -23,7 +23,7 @@ export class Patient {
   @Prop({ trim: true })
   aadhaarNumber?: string;
 
-  @Prop({ required: true, trim: true, unique: true, index: true })
+  @Prop({ required: true, trim: true })
   mobile!: string;
 
   @Prop({ trim: true, lowercase: true })

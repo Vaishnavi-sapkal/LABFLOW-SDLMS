@@ -10,6 +10,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
   Param,
+  Patch,
   Post,
   Req,
   UnauthorizedException,
@@ -34,6 +35,8 @@ import { PatientSignupDto } from './dto/patient-signup.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { RegistrationGuard } from './registration.guard';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -75,7 +78,7 @@ export class AuthController {
     try {
       return await this.authLogic.patientSignup(data);
     } catch (error) {
-      if (error instanceof Error && (error.message === 'Email already registered' || error.message === 'A patient with this mobile number already exists')) {
+      if (error instanceof Error && error.message === 'Email already registered') {
         throw new ConflictException(error.message);
       }
       if (error instanceof BadRequestException || error instanceof ServiceUnavailableException) throw error;
@@ -206,6 +209,48 @@ export class AuthController {
         throw new UnauthorizedException(error.message);
       }
       throw new InternalServerErrorException('Unable to validate the user account');
+    }
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get the authenticated user profile' })
+  async getMe(@Req() req: any) {
+    try {
+      return await this.authLogic.getMe(req.user.userId);
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException('Unable to load the user profile');
+    }
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Update the authenticated user profile' })
+  async updateMe(@Req() req: any, @Body() data: UpdateProfileDto) {
+    try {
+      return await this.authLogic.updateMe(req.user.userId, data);
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException('Unable to update the user profile');
+    }
+  }
+
+  @Patch('me/password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Change the authenticated user password' })
+  async changePassword(@Req() req: any, @Body() data: ChangePasswordDto) {
+    try {
+      return await this.authLogic.changePassword(req.user.userId, data);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Current password is incorrect') {
+        throw new BadRequestException(error.message);
+      }
+      if (error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException('Unable to change the password');
     }
   }
 

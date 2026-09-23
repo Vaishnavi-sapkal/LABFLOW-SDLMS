@@ -30,6 +30,7 @@ interface AuthContextValue {
   user: AuthenticatedUser | null;
   login: (email: string, password: string) => Promise<Role>;
   logout: () => void;
+  updateUser: (partial: Partial<AuthenticatedUser>) => void;
   landingPath: string;
 }
 
@@ -85,6 +86,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRole('Admin');
   };
 
+  const updateUser = (partial: Partial<AuthenticatedUser>) => {
+    setUser((current) => {
+      if (!current) return current;
+
+      const next = { ...current, ...partial };
+      localStorage.setItem('labflow_user', JSON.stringify(next));
+      return next;
+    });
+  };
+
   const value = useMemo(
     () => ({
       role,
@@ -92,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       login,
       logout,
+      updateUser,
       landingPath: roleLanding[role],
     }),
     [role, user],

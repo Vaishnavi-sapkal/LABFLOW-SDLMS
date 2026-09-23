@@ -7,6 +7,7 @@ export interface AuthenticatedUser {
   email: string;
   role: string;
   isActive: boolean;
+  mobile?: string;
 }
 
 export interface LoginResponse {
@@ -36,17 +37,16 @@ export interface PatientSignupDto {
 
 export type AccountSummary = AuthenticatedUser;
 
-interface ProtectedAuthResponse {
-  user: {
-    userId: string;
-    email: string;
-    role: string;
-  };
-}
-
 interface AuthServiceLoginResponse {
   access_token: string;
   user: AuthenticatedUser;
+}
+
+export type UpdateMyAccountPayload = Partial<Pick<AuthenticatedUser, 'name' | 'mobile'>>;
+
+export interface ChangeMyPasswordPayload {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
@@ -132,6 +132,46 @@ export async function resetPassword(token: string, newPassword: string): Promise
   }
 }
 
+export async function getMyAccount(): Promise<AuthenticatedUser> {
+  try {
+    const { data } = await client.get<AuthenticatedUser>('/auth/me');
+    return data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      const message = error.response?.data?.message;
+      throw new Error(typeof message === 'string' ? message : 'Unable to load your profile.');
+    }
+    throw error;
+  }
+}
+
+export async function updateMyAccount(payload: UpdateMyAccountPayload): Promise<AuthenticatedUser> {
+  try {
+    const { data } = await client.patch<AuthenticatedUser>('/auth/me', payload);
+    localStorage.setItem('labflow_user', JSON.stringify(data));
+    return data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      const message = error.response?.data?.message;
+      throw new Error(typeof message === 'string' ? message : 'Unable to update your profile. Please try again.');
+    }
+    throw error;
+  }
+}
+
+export async function changeMyPassword(payload: ChangeMyPasswordPayload): Promise<{ message: string }> {
+  try {
+    const { data } = await client.patch<{ message: string }>('/auth/me/password', payload);
+    return data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      const message = error.response?.data?.message;
+      throw new Error(typeof message === 'string' ? message : 'Unable to change your password. Please try again.');
+    }
+    throw error;
+  }
+}
+
 export async function listAccounts(): Promise<AccountSummary[]> {
   try {
     const { data } = await client.get<AccountSummary[]>('/auth/users');
@@ -159,25 +199,24 @@ export async function deleteAccount(id: string): Promise<void> {
 
 export async function getCurrentUser(): Promise<AuthenticatedUser> {
   try {
-    const { data } = await client.get<ProtectedAuthResponse>('/auth/protected');
-    const storedUser = getStoredUser();
+    const { data } = await client.get<AuthenticatedUser>('/auth/me');
+    let currentUser = data;
 
-    if (storedUser?.id === data.user.userId) {
-      return {
-        ...storedUser,
-        id: data.user.userId,
-        email: data.user.email,
-        role: data.user.role,
-      };
+    if (data.role === 'patient') {
+      try {
+        const patientResponse = await client.get<{ fullName: string; mobile: string; email?: string }>('/patients/me');
+        currentUser = {
+          ...currentUser,
+          name: patientResponse.data.fullName,
+          mobile: patientResponse.data.mobile,
+        };
+      } catch {
+        currentUser = data;
+      }
     }
 
-    return {
-      id: data.user.userId,
-      name: data.user.email,
-      email: data.user.email,
-      role: data.user.role,
-      isActive: true,
-    };
+    localStorage.setItem('labflow_user', JSON.stringify(currentUser));
+    return currentUser;
   } catch (error) {
     if (isAxiosError(error)) {
       const message = error.response?.data?.message;

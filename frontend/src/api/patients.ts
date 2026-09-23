@@ -83,6 +83,21 @@ export async function getMyPatientProfile(): Promise<CreatedPatient> {
   }
 }
 
+export type UpdateMyPatientProfilePayload = Partial<Pick<CreatePatientDto, 'fullName' | 'mobile' | 'email' | 'address' | 'city' | 'state' | 'pincode' | 'emergencyContact'>>;
+
+export async function updateMyPatientProfile(payload: UpdateMyPatientProfilePayload): Promise<CreatedPatient> {
+  try {
+    const { data } = await client.patch<CreatedPatient>('/patients/me', payload);
+    return data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      const message = error.response?.data?.message;
+      throw new Error(typeof message === 'string' ? message : 'Unable to update your patient profile. Please try again.');
+    }
+    throw error;
+  }
+}
+
 export async function getMyPatientPortal(): Promise<PatientPortalData> {
   try { return (await client.get<PatientPortalData>('/patients/me/portal')).data; }
   catch (error) { if (isAxiosError(error)) throw new Error(typeof error.response?.data?.message === 'string' ? error.response.data.message : 'Unable to load your portal.'); throw error; }

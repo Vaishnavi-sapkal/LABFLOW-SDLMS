@@ -19,6 +19,9 @@ export class User {
   @Prop({ required: true })
   password!: string;
 
+  @Prop({ trim: true })
+  mobile?: string;
+
   @Prop({
     required: true,
     enum: [
