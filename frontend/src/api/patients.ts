@@ -93,6 +93,11 @@ export async function getPatientDetails(id: string): Promise<Patient360Data> {
   catch (error) { if (isAxiosError(error)) throw new Error(typeof error.response?.data?.message === 'string' ? error.response.data.message : 'Unable to load Patient 360 details.'); throw error; }
 }
 
+export async function getPatientReport(patientId: string, reportId: string): Promise<import('./reports').ReportDocument> {
+  try { return (await client.get<import('./reports').ReportDocument>(`/patients/${patientId}/reports/${reportId}`)).data; }
+  catch (error) { if (isAxiosError(error)) throw new Error(typeof error.response?.data?.message === 'string' ? error.response.data.message : 'Unable to load this report.'); throw error; }
+}
+
 export async function updatePatient(id: string, payload: Partial<CreatePatientDto>): Promise<CreatedPatient> {
   try {
     const { data } = await client.patch<CreatedPatient>(`/patients/${id}`, payload);

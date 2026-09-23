@@ -108,6 +108,19 @@ export class PatientService {
     return { profile: patient, bookings, samples, results, reports, billing, account: this.accountSummary(patient) };
   }
 
+  async getPatientReport(patientId: string, reportId: string, role: string) {
+    if (role !== 'admin') {
+      throw new ForbiddenException('Only administrators may view medical reports through Patient 360');
+    }
+
+    const patient = await this.findOne(patientId);
+    const report = await this.loadInternal('REPORT_SERVICE_URL', `/reports/${encodeURIComponent(reportId)}`, this.internalHeaders());
+    if (String(report.patientId) !== String(patient._id)) {
+      throw new ForbiddenException('The requested report does not belong to this patient');
+    }
+    return report;
+  }
+
   private internalHeaders() {
     const secret = this.configService.get<string>('INTERNAL_SERVICE_SECRET');
     if (!secret) throw new ServiceUnavailableException('INTERNAL_SERVICE_SECRET is not configured');

@@ -95,6 +95,39 @@ describe('PatientService', () => {
     expect(model.findById).not.toHaveBeenCalled();
   });
 
+  it('rejects a report that belongs to a different Patient 360 target', async () => {
+    const patient = { _id: 'patient-1' };
+    model.findById.mockReturnValue({ exec: jest.fn().mockResolvedValue(patient) });
+    (service as any).configService.get = jest.fn((key: string) => ({
+      INTERNAL_SERVICE_SECRET: 'internal-secret',
+      REPORT_SERVICE_URL: 'http://reports',
+    })[key]);
+    const fetchMock = jest.spyOn(global, 'fetch' as any).mockResolvedValue({ ok: true, json: async () => ({ _id: 'report-2', patientId: 'patient-2' }) } as any);
+
+    await expect(service.getPatientReport('patient-1', 'report-2', 'admin')).rejects.toBeInstanceOf(ForbiddenException);
+    expect(fetchMock).toHaveBeenCalledWith('http://reports/reports/report-2', { headers: { 'x-internal-service-key': 'internal-secret' } });
+    fetchMock.mockRestore();
+  });
+
+  it('returns a report only when it belongs to the requested Patient 360 target', async () => {
+    const patient = { _id: 'patient-1' };
+    const report = { _id: 'report-1', patientId: 'patient-1', reportNo: 'LF-RPT-2609-001' };
+    model.findById.mockReturnValue({ exec: jest.fn().mockResolvedValue(patient) });
+    (service as any).configService.get = jest.fn((key: string) => ({
+      INTERNAL_SERVICE_SECRET: 'internal-secret',
+      REPORT_SERVICE_URL: 'http://reports',
+    })[key]);
+    const fetchMock = jest.spyOn(global, 'fetch' as any).mockResolvedValue({ ok: true, json: async () => report } as any);
+
+    await expect(service.getPatientReport('patient-1', 'report-1', 'admin')).resolves.toEqual(report);
+    fetchMock.mockRestore();
+  });
+
+  it('rejects Patient 360 report access from non-admin roles before loading a patient', async () => {
+    await expect(service.getPatientReport('patient-1', 'report-1', 'receptionist')).rejects.toBeInstanceOf(ForbiddenException);
+    expect(model.findById).not.toHaveBeenCalled();
+  });
+
   it('updates an existing patient and rejects a missing one', async () => {
     const exec = jest.fn().mockResolvedValueOnce({ _id: 'patient-1', city: 'Pune' }).mockResolvedValueOnce(null);
     model.findByIdAndUpdate.mockReturnValue({ exec });

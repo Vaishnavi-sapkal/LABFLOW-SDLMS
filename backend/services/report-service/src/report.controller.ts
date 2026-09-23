@@ -41,6 +41,7 @@ export class ReportController {
   }
 
   @Get(':id')
+  @InternalService()
   @ApiOperation({ summary: 'Get a report by ID' })
   findOne(@Param('id') id: string) { return this.reportService.findOne(id); }
 

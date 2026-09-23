@@ -55,6 +55,13 @@ export class PatientController {
     return this.patientService.getDetails(id, request.user.role);
   }
 
+  @Get(':id/reports/:reportId')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Get a Patient 360 report after verifying it belongs to the requested patient' })
+  findPatientReport(@Param('id') id: string, @Param('reportId') reportId: string, @Req() request: any) {
+    return this.patientService.getPatientReport(id, reportId, request.user.role);
+  }
+
   @Get(':id')
   @InternalService()
   @Roles('admin', 'receptionist', 'doctor', 'patient')
