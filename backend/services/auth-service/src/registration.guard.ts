@@ -20,9 +20,11 @@ export class RegistrationGuard extends AuthGuard('jwt') implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const userCount = await this.userModel.countDocuments();
+    // A public patient may register before the laboratory has created its first
+    // staff account. Keep the initial-admin bootstrap available in that case.
+    const userCount = await this.userModel.countDocuments({ role: { $ne: 'patient' } });
 
-    // The only anonymous registration permitted is initial system setup.
+    // The only anonymous staff registration permitted is initial system setup.
     if (userCount === 0) {
       if (request.body?.role !== 'admin') {
         throw new ForbiddenException('Only the first account may be created without authentication, and it must be an admin');

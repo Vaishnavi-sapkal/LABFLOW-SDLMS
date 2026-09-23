@@ -30,6 +30,9 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { PatientSignupDto } from './dto/patient-signup.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { RegistrationGuard } from './registration.guard';
 
 @ApiTags('Authentication')
@@ -66,6 +69,44 @@ export class AuthController {
     }
   }
 
+  @Post('patient-signup')
+  @ApiOperation({ summary: 'Register a patient account pending email verification' })
+  async patientSignup(@Body() data: PatientSignupDto) {
+    try {
+      return await this.authLogic.patientSignup(data);
+    } catch (error) {
+      if (error instanceof Error && (error.message === 'Email already registered' || error.message === 'A patient with this mobile number already exists')) {
+        throw new ConflictException(error.message);
+      }
+      if (error instanceof BadRequestException || error instanceof ServiceUnavailableException) throw error;
+      throw new InternalServerErrorException('Unable to create the patient account');
+    }
+  }
+
+  @Post('verify-email')
+  @ApiOperation({ summary: 'Verify a patient email address using a verification token' })
+  async verifyEmail(@Body() data: VerifyEmailDto) {
+    try {
+      return await this.authLogic.verifyEmail(data);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired verification token') {
+        throw new BadRequestException(error.message);
+      }
+      throw new InternalServerErrorException('Unable to verify email');
+    }
+  }
+
+  @Post('resend-verification')
+  @ApiOperation({ summary: 'Resend a patient email verification link' })
+  async resendVerification(@Body() data: ResendVerificationDto) {
+    try {
+      return await this.authLogic.resendVerification(data);
+    } catch {
+      // Keep the response generic to avoid account enumeration.
+      return { message: 'If an unverified patient account exists for this email, verification email processing has been requested.' };
+    }
+  }
+
   // =========================
   // LOGIN
   // =========================
@@ -89,7 +130,8 @@ export class AuthController {
       if (
         error instanceof Error &&
         (error.message === 'Invalid email or password' ||
-          error.message === 'User account is inactive')
+          error.message === 'User account is inactive' ||
+          error.message === 'Please verify your email before logging in')
       ) {
         throw new UnauthorizedException(error.message);
       }

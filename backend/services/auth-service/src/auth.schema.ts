@@ -34,6 +34,15 @@ export class User {
   @Prop({ default: true })
   isActive!: boolean;
 
+  @Prop({ default: false })
+  emailVerified!: boolean;
+
+  @Prop()
+  verificationTokenHash?: string;
+
+  @Prop()
+  verificationTokenExpiresAt?: Date;
+
   @Prop()
   resetPasswordTokenHash?: string;
 

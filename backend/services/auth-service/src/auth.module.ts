@@ -6,7 +6,7 @@ import { isValidObjectId, Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
-import { User, UserSchema } from './auth.schema';
+import { User, UserDocument, UserSchema } from './auth.schema';
 import { AuthController, HealthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { RegistrationGuard } from './registration.guard';
@@ -62,7 +62,39 @@ import { RegistrationGuard } from './registration.guard';
         userModel: Model<User>,
         jwtService: JwtService,
         configService: ConfigService,
-      ) => ({
+      ) => {
+        const sendVerificationEmail = async (user: UserDocument, token: string) => {
+          const notificationServiceUrl = configService.get<string>('NOTIFICATION_SERVICE_URL');
+          const internalSecret = configService.get<string>('INTERNAL_SERVICE_SECRET');
+          const frontendUrl = configService.get<string>('FRONTEND_URL');
+          if (!notificationServiceUrl || !internalSecret || !frontendUrl) return false;
+
+          try {
+            const response = await fetch(`${notificationServiceUrl.replace(/\/$/, '')}/notifications`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-internal-service-key': internalSecret,
+              },
+              body: JSON.stringify({
+                userId: String(user._id),
+                recipientEmail: user.email,
+                role: 'patient',
+                title: 'Verify your LabFlow email address',
+                message: `Verify your LabFlow patient account: ${frontendUrl.replace(/\/$/, '')}/verify-email?token=${token}. This link expires in 30 minutes.`,
+                category: 'registration',
+                priority: 'normal',
+              }),
+            });
+            if (!response.ok) return false;
+            const notification = await response.json().catch(() => null);
+            return notification?.emailStatus === 'sent';
+          } catch {
+            return false;
+          }
+        };
+
+        return {
 
         // =========================
         // REGISTER
@@ -87,6 +119,7 @@ import { RegistrationGuard } from './registration.guard';
             password: hashedPassword,
             role: data.role,
             isActive: true,
+            emailVerified: true,
           });
 
           return {
@@ -96,6 +129,109 @@ import { RegistrationGuard } from './registration.guard';
             role: user.role,
             isActive: user.isActive,
           };
+        },
+
+        patientSignup: async (data: any) => {
+          const email = data.email.toLowerCase().trim();
+          const existingUser = await userModel.findOne({ email });
+          if (existingUser) {
+            if (existingUser.role === 'patient' && !existingUser.isActive && existingUser.emailVerified === false) {
+              return {
+                message: 'If an unverified patient account exists for this email, verification email processing has been requested.',
+                verificationEmailSent: false,
+              };
+            }
+            throw new Error('Email already registered');
+          }
+
+          const user = await userModel.create({
+            name: data.fullName.trim(),
+            email,
+            password: await bcrypt.hash(data.password, 10),
+            role: 'patient',
+            isActive: false,
+            emailVerified: false,
+          });
+
+          try {
+            const patientServiceUrl = configService.get<string>('PATIENT_SERVICE_URL');
+            const internalSecret = configService.get<string>('INTERNAL_SERVICE_SECRET');
+            if (!patientServiceUrl || !internalSecret) {
+              throw new ServiceUnavailableException('Patient registration is temporarily unavailable');
+            }
+
+            const profileResponse = await fetch(`${patientServiceUrl.replace(/\/$/, '')}/patients`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-internal-service-key': internalSecret,
+              },
+              body: JSON.stringify({
+                fullName: data.fullName.trim(),
+                dateOfBirth: data.dateOfBirth,
+                gender: data.gender,
+                mobile: data.mobile.trim(),
+                email,
+                consentToTesting: data.consentToTesting,
+                consentToDetailsVerification: data.consentToDetailsVerification,
+                userId: String(user._id),
+              }),
+            });
+            if (!profileResponse.ok) {
+              const profileError = await profileResponse.json().catch(() => ({}));
+              throw new Error(typeof profileError?.message === 'string' ? profileError.message : 'Unable to create patient profile');
+            }
+          } catch (error) {
+            await user.deleteOne();
+            if (error instanceof ServiceUnavailableException) throw error;
+            throw error;
+          }
+
+          const token = crypto.randomBytes(32).toString('hex');
+          user.verificationTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+          user.verificationTokenExpiresAt = new Date(Date.now() + 30 * 60 * 1000);
+          await user.save();
+
+          const verificationEmailSent = await sendVerificationEmail(user, token);
+          return {
+            message: verificationEmailSent
+              ? 'Registration successful. Please verify your email before logging in.'
+              : 'Registration is pending. We could not complete email delivery; please use resend verification.',
+            verificationEmailSent,
+          };
+        },
+
+        verifyEmail: async (data: any) => {
+          const verificationTokenHash = crypto.createHash('sha256').update(data.token).digest('hex');
+          const user = await userModel.findOne({
+            role: 'patient',
+            isActive: false,
+            emailVerified: false,
+            verificationTokenHash,
+            verificationTokenExpiresAt: { $gt: new Date() },
+          });
+          if (!user) throw new Error('Invalid or expired verification token');
+
+          user.emailVerified = true;
+          user.isActive = true;
+          user.verificationTokenHash = undefined;
+          user.verificationTokenExpiresAt = undefined;
+          await user.save();
+          return { message: 'Email verified successfully. You can now log in to LabFlow.' };
+        },
+
+        resendVerification: async (data: any) => {
+          const response = { message: 'If an unverified patient account exists for this email, verification email processing has been requested.' };
+          const email = data.email.toLowerCase().trim();
+          const user = await userModel.findOne({ email, role: 'patient', isActive: false, emailVerified: false });
+          if (!user) return response;
+
+          const token = crypto.randomBytes(32).toString('hex');
+          user.verificationTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+          user.verificationTokenExpiresAt = new Date(Date.now() + 30 * 60 * 1000);
+          await user.save();
+          await sendVerificationEmail(user, token);
+          return response;
         },
 
         // =========================
@@ -117,6 +253,10 @@ import { RegistrationGuard } from './registration.guard';
 
           if (!isPasswordValid) {
             throw new Error('Invalid email or password');
+          }
+
+          if (user.role === 'patient' && user.emailVerified === false) {
+            throw new Error('Please verify your email before logging in');
           }
 
           if (!user.isActive) {
@@ -257,7 +397,8 @@ import { RegistrationGuard } from './registration.guard';
           await user.deleteOne();
           return { deleted: true, id: String(user._id), role: user.role };
         },
-      }),
+        };
+      },
     },
 
     // =========================

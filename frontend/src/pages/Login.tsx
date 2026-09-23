@@ -5,7 +5,7 @@ import {
   Mail,
   TestTubeDiagonal,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../app/AuthContext';
 
@@ -240,6 +240,9 @@ export function Login() {
 
               {/* FOOTER */}
               <div className="mt-8 border-t border-[#edf1f5] pt-5">
+                <p className="mb-3 text-center text-[12px] text-[#7d8c9d]">
+                  Don&apos;t have an account? <Link className="font-semibold text-[#1682a9] hover:text-[#087eae]" to="/patient-signup">Create patient account</Link>
+                </p>
                 <p className="text-center text-[11px] text-[#9aa7b5]">
                   Authorized laboratory personnel only
                 </p>

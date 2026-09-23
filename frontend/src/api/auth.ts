@@ -23,6 +23,17 @@ export interface RegisterAccountDto {
   role: AccountRole;
 }
 
+export interface PatientSignupDto {
+  fullName: string;
+  dateOfBirth: string;
+  gender: 'male' | 'female' | 'other';
+  mobile: string;
+  email: string;
+  password: string;
+  consentToTesting: boolean;
+  consentToDetailsVerification: boolean;
+}
+
 export type AccountSummary = AuthenticatedUser;
 
 interface ProtectedAuthResponse {
@@ -65,6 +76,33 @@ export async function registerAccount(payload: RegisterAccountDto): Promise<Auth
       throw new Error(typeof message === 'string' ? message : 'Unable to create the account. Please try again.');
     }
     throw error;
+  }
+}
+
+export async function patientSignup(payload: PatientSignupDto): Promise<{ message: string; verificationEmailSent: boolean }> {
+  try {
+    const { data } = await client.post<{ message: string; verificationEmailSent: boolean }>('/auth/patient-signup', payload);
+    return data;
+  } catch (error) {
+    throwApiError(error, 'Unable to create the patient account. Please try again.');
+  }
+}
+
+export async function verifyEmail(token: string): Promise<{ message: string }> {
+  try {
+    const { data } = await client.post<{ message: string }>('/auth/verify-email', { token });
+    return data;
+  } catch (error) {
+    throwApiError(error, 'Unable to verify your email.');
+  }
+}
+
+export async function resendVerification(email: string): Promise<{ message: string }> {
+  try {
+    const { data } = await client.post<{ message: string }>('/auth/resend-verification', { email });
+    return data;
+  } catch (error) {
+    throwApiError(error, 'Unable to resend the verification email.');
   }
 }
 
@@ -165,4 +203,12 @@ function getStoredUser(): AuthenticatedUser | null {
     localStorage.removeItem('labflow_user');
     return null;
   }
+}
+
+function throwApiError(error: unknown, fallback: string): never {
+  if (isAxiosError(error)) {
+    const message = error.response?.data?.message;
+    throw new Error(typeof message === 'string' ? message : fallback);
+  }
+  throw error;
 }

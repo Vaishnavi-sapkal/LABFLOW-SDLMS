@@ -8,6 +8,8 @@ import { Dashboard } from './pages/Dashboard';
 import { DoctorManagement } from './pages/DoctorManagement';
 import { FinalReportPreview } from './pages/FinalReportPreview';
 import { Login } from './pages/Login';
+import { PatientSignup } from './pages/PatientSignup';
+import { VerifyEmail } from './pages/VerifyEmail';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { Notifications } from './pages/Notifications';
 import { PatientPortal } from './pages/PatientPortal';
@@ -47,6 +49,8 @@ export default function App() {
       {/* Public routes */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/patient-signup" element={<PatientSignup />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/verify" element={<ReportVerification />} />
