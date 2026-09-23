@@ -26,7 +26,7 @@ async function bootstrap() {
   const authServiceUrl = (process.env.AUTH_SERVICE_URL ?? 'http://localhost:3001').replace(/\/$/, '');
   app.use('/api', async (request: any, response: any, next: () => void) => {
     const path = request.path as string;
-    const isPublic = request.method === 'OPTIONS' || (request.method === 'POST' && (path === '/auth/login' || path === '/auth/register')) ||
+    const isPublic = request.method === 'OPTIONS' || (request.method === 'POST' && (path === '/auth/login' || path === '/auth/register' || path === '/auth/forgot-password' || path === '/auth/reset-password')) ||
       path === '/auth/protected' || path.startsWith('/reports/verify/');
     if (isPublic) return next();
 

@@ -68,6 +68,32 @@ export async function registerAccount(payload: RegisterAccountDto): Promise<Auth
   }
 }
 
+export async function forgotPassword(email: string): Promise<{ message: string }> {
+  try {
+    const { data } = await client.post<{ message: string }>('/auth/forgot-password', { email });
+    return data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      const message = error.response?.data?.message;
+      throw new Error(typeof message === 'string' ? message : 'Unable to send password reset link. Please try again.');
+    }
+    throw error;
+  }
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+  try {
+    const { data } = await client.post<{ message: string }>('/auth/reset-password', { token, newPassword });
+    return data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      const message = error.response?.data?.message;
+      throw new Error(typeof message === 'string' ? message : 'Unable to reset password. Please try again.');
+    }
+    throw error;
+  }
+}
+
 export async function listAccounts(): Promise<AccountSummary[]> {
   try {
     const { data } = await client.get<AccountSummary[]>('/auth/users');

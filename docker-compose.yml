@@ -13,6 +13,8 @@ services:
       JWT_EXPIRES_IN: 1d
       DOCTOR_SERVICE_URL: http://doctor-service:3000
       PATIENT_SERVICE_URL: http://patient-service:3000
+      NOTIFICATION_SERVICE_URL: http://notification-service:3000
+      FRONTEND_URL: http://localhost:5173
     depends_on: [doctor-service, patient-service]
 
   patient-service:
@@ -132,6 +134,7 @@ services:
       DOCTOR_SERVICE_URL: http://doctor-service:3000
       UPI_ID: ${UPI_ID}
     depends_on: [booking-service, patient-service, doctor-service]
+
   notification-service:
     build:
       context: .

@@ -202,6 +202,12 @@ export function Login() {
                   </div>
                 </div>
 
+                <div className="-mt-2 text-right">
+                  <a href="/forgot-password" className="text-[13px] font-semibold text-[#1682a9] transition hover:text-[#087eae]">
+                    Forgot password?
+                  </a>
+                </div>
+
                 {/* ERROR MESSAGE */}
                 {error && (
                   <div

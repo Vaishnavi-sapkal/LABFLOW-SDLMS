@@ -28,6 +28,8 @@ import { RolesGuard } from './roles.guard';
 import { Roles } from './roles.decorator';
 import { LoginUserDto } from './dto/login-user.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RegistrationGuard } from './registration.guard';
 
 @ApiTags('Authentication')
@@ -90,6 +92,46 @@ export class AuthController {
           error.message === 'User account is inactive')
       ) {
         throw new UnauthorizedException(error.message);
+      }
+
+      throw new InternalServerErrorException();
+    }
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({
+    summary: 'Send a password reset link',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Password reset link request processed',
+  })
+  async forgotPassword(@Body() data: ForgotPasswordDto) {
+    try {
+      return await this.authLogic.forgotPassword(data);
+    } catch {
+      throw new InternalServerErrorException();
+    }
+  }
+
+  @Post('reset-password')
+  @ApiOperation({
+    summary: 'Reset a password using a reset token',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Password reset successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid or expired reset token',
+  })
+  async resetPassword(@Body() data: ResetPasswordDto) {
+    try {
+      return await this.authLogic.resetPassword(data);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired reset token') {
+        throw new BadRequestException(error.message);
       }
 
       throw new InternalServerErrorException();

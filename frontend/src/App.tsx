@@ -8,6 +8,7 @@ import { Dashboard } from './pages/Dashboard';
 import { DoctorManagement } from './pages/DoctorManagement';
 import { FinalReportPreview } from './pages/FinalReportPreview';
 import { Login } from './pages/Login';
+import { ForgotPassword } from './pages/ForgotPassword';
 import { Notifications } from './pages/Notifications';
 import { PatientPortal } from './pages/PatientPortal';
 import { PatientRegistration } from './pages/PatientRegistration';
@@ -18,6 +19,7 @@ import { SampleTracking } from './pages/SampleTracking';
 import { TestBooking } from './pages/TestBooking';
 import { TestManagement } from './pages/TestManagement';
 import { AccountManagement } from './pages/AccountManagement';
+import { ResetPassword } from './pages/ResetPassword';
 
 import type { Role } from './types/labflow';
 
@@ -45,6 +47,8 @@ export default function App() {
       {/* Public routes */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/verify" element={<ReportVerification />} />
 
       {/* Protected application routes */}

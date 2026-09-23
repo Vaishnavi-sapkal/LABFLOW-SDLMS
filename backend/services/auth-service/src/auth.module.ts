@@ -4,6 +4,7 @@ import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { isValidObjectId, Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 import { User, UserSchema } from './auth.schema';
 import { AuthController, HealthController } from './auth.controller';
@@ -140,6 +141,64 @@ import { RegistrationGuard } from './registration.guard';
               isActive: user.isActive,
             },
           };
+        },
+
+        forgotPassword: async (data: any) => {
+          const email = data.email.toLowerCase().trim();
+          const user = await userModel.findOne({ email });
+          const response = {
+            message: 'If an account exists for that email, a password reset link has been sent.',
+          };
+
+          if (!user || !user.isActive) {
+            return response;
+          }
+
+          const token = crypto.randomBytes(32).toString('hex');
+          user.resetPasswordTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+          user.resetPasswordExpiresAt = new Date(Date.now() + 30 * 60 * 1000);
+          await user.save();
+
+          try {
+            await fetch(`${configService.get<string>('NOTIFICATION_SERVICE_URL')}/notifications`, {
+              method: 'POST',
+              headers: {
+                'x-internal-service-key': configService.get<string>('INTERNAL_SERVICE_SECRET') ?? '',
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                recipientEmail: user.email,
+                role: user.role,
+                title: 'Reset your LabFlow password',
+                message: `Use this link to reset your password: ${configService.get<string>('FRONTEND_URL')}/reset-password?token=${token}. This link expires in 30 minutes. If you did not request this, ignore this email.`,
+                category: 'registration',
+                priority: 'normal',
+              }),
+            });
+          } catch (error) {
+            console.error('Failed to send password reset notification', error);
+          }
+
+          return response;
+        },
+
+        resetPassword: async (data: any) => {
+          const resetPasswordTokenHash = crypto.createHash('sha256').update(data.token).digest('hex');
+          const user = await userModel.findOne({
+            resetPasswordTokenHash,
+            resetPasswordExpiresAt: { $gt: new Date() },
+          });
+
+          if (!user) {
+            throw new Error('Invalid or expired reset token');
+          }
+
+          user.password = await bcrypt.hash(data.newPassword, 10);
+          user.resetPasswordTokenHash = undefined;
+          user.resetPasswordExpiresAt = undefined;
+          await user.save();
+
+          return { message: 'Password reset successfully' };
         },
 
         listUsers: async () => {
