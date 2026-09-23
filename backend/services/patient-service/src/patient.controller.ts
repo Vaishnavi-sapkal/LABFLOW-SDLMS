@@ -41,8 +41,17 @@ export class PatientController {
     return this.patientService.getPortal(request.user.userId);
   }
 
+  @Get('by-user/:userId')
+  @InternalService()
+  @Roles('admin')
+  @ApiOperation({ summary: 'Get a patient profile by auth user ID (internal)' })
+  findByUserId(@Param('userId') userId: string) {
+    return this.patientService.findByUserId(userId);
+  }
+
   @Delete('by-user/:userId')
   @InternalService()
+  @Roles('admin')
   @ApiOperation({ summary: 'Delete a patient profile linked to an auth user (internal)' })
   removeByUserId(@Param('userId') userId: string) {
     return this.patientService.removeByUserId(userId);

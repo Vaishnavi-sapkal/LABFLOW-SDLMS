@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { BookingService } from './booking.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { CreatePatientBookingDto } from './dto/create-patient-booking.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { Roles, RolesGuard } from './auth';
 import { InternalService, InternalServiceGuard } from './internal-service.guard';
@@ -19,6 +20,20 @@ export class BookingController {
     return this.bookingService.create(createBookingDto);
   }
 
+  @Post('me')
+  @Roles('patient')
+  @ApiOperation({ summary: 'Create a booking for the authenticated patient' })
+  createForPatient(@Body() dto: CreatePatientBookingDto, @Req() request: any) {
+    return this.bookingService.createForPatient(request.user.userId, dto);
+  }
+
+  @Get('me')
+  @Roles('patient')
+  @ApiOperation({ summary: 'List bookings for the authenticated patient' })
+  findMine(@Req() request: any) {
+    return this.bookingService.findForPatient(request.user.userId);
+  }
+
   @Get()
   @InternalService()
   @Roles('admin', 'receptionist', 'doctor', 'technician', 'lab_technician')
@@ -33,7 +48,7 @@ export class BookingController {
   }
 
   @Get('availability')
-  @Roles('admin', 'receptionist', 'doctor')
+  @Roles('admin', 'receptionist', 'doctor', 'patient')
   @ApiOperation({ summary: 'List booked and available time slots for a doctor on a date' })
   availability(@Query('doctorId') doctorId: string, @Query('date') date: string) {
     return this.bookingService.getAvailability(doctorId, date);

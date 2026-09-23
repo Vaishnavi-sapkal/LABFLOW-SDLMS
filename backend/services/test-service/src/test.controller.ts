@@ -21,7 +21,7 @@ export class TestController {
 
   @Get()
   @InternalService()
-  @Roles('admin', 'receptionist')
+  @Roles('admin', 'receptionist', 'patient')
   @ApiOperation({ summary: 'List tests and packages, optionally filtered by category, package status, name, or code' })
   findAll(
     @Query('category') category?: string,

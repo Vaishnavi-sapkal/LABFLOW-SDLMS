@@ -10,6 +10,8 @@ export interface CreateBookingDto {
   notes?: string;
 }
 
+export type CreatePatientBookingDto = Omit<CreateBookingDto, 'patientId'>;
+
 export interface BookingItem {
   testId: string;
   code: string;
@@ -62,6 +64,24 @@ export async function createBooking(payload: CreateBookingDto): Promise<CreatedB
 
     throw error;
   }
+}
+
+export async function createMyBooking(payload: CreatePatientBookingDto): Promise<CreatedBooking> {
+  try {
+    const { data } = await client.post<CreatedBooking>('/bookings/me', payload);
+    return data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      const message = error.response?.data?.message;
+      throw new BookingRequestError(typeof message === 'string' ? message : 'Unable to create your booking. Please try again.', error.response?.status);
+    }
+    throw error;
+  }
+}
+
+export async function listMyBookings(): Promise<CreatedBooking[]> {
+  try { return (await client.get<CreatedBooking[]>('/bookings/me')).data; }
+  catch (error) { if (isAxiosError(error)) throw new Error(typeof error.response?.data?.message === 'string' ? error.response.data.message : 'Unable to load your bookings.'); throw error; }
 }
 
 export async function listBookings(filters?: { patientId?: string; doctorId?: string; status?: string; date?: string }): Promise<CreatedBooking[]> {

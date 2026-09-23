@@ -19,10 +19,10 @@ export class DoctorController {
 
   @Get()
   @InternalService()
-  @Roles('admin', 'receptionist')
+  @Roles('admin', 'receptionist', 'patient')
   @ApiOperation({ summary: 'List doctors, optionally filtered by active status or name' })
-  findAll(@Query('isActive') isActive?: string, @Query('search') search?: string) {
-    return this.doctorService.findAll(isActive, search);
+  findAll(@Query('isActive') isActive?: string, @Query('search') search?: string, @Req() request?: any) {
+    return this.doctorService.findAll(request?.user?.role === 'patient' ? 'true' : isActive, search);
   }
 
   @Get('me')

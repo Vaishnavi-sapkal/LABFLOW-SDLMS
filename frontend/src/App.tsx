@@ -15,6 +15,7 @@ import { Notifications } from './pages/Notifications';
 import { PatientPortal } from './pages/PatientPortal';
 import { PatientRegistration } from './pages/PatientRegistration';
 import { PatientDetails } from './pages/PatientDetails';
+import { PatientBooking } from './pages/PatientBooking';
 import { ResultEntry } from './pages/ResultEntry';
 import { ResultVerification } from './pages/ResultVerification';
 import { ReportVerification } from './pages/ReportVerification';
@@ -188,6 +189,13 @@ export default function App() {
             }
           >
             <Route index element={<PatientPortal />} />
+          </Route>
+
+          <Route
+            path="/patient/book"
+            element={<ProtectedRoute allowedRoles={['Patient']} />}
+          >
+            <Route index element={<PatientBooking />} />
           </Route>
 
           <Route

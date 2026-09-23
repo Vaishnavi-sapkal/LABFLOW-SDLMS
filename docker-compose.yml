@@ -59,7 +59,8 @@ services:
       INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-replace-with-a-long-random-secret}
       TEST_SERVICE_URL: http://test-service:3000
       DOCTOR_SERVICE_URL: http://doctor-service:3000
-    depends_on: [test-service, doctor-service]
+      PATIENT_SERVICE_URL: http://patient-service:3000
+    depends_on: [test-service, doctor-service, patient-service]
 
   doctor-service:
     build:

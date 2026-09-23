@@ -6,6 +6,7 @@ import { FilterQuery, Model } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
 import { Booking, BookingDocument, BookingItem } from './booking.schema';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { CreatePatientBookingDto } from './dto/create-patient-booking.dto';
 import { BookingStatus } from './dto/update-status.dto';
 
 const TIME_SLOTS = [
@@ -24,6 +25,7 @@ const ALLOWED_TRANSITIONS: Record<BookingStatus, BookingStatus[]> = {
 
 type TestResponse = { _id: string; code: string; name: string; price: number };
 type DoctorResponse = { _id: string; isActive: boolean };
+type PatientResponse = { _id: string };
 
 @Injectable()
 export class BookingService {
@@ -76,6 +78,15 @@ export class BookingService {
         throw error;
       }
     }
+  }
+
+  async createForPatient(userId: string, dto: CreatePatientBookingDto) {
+    const patientId = await this.getPatientIdForUser(userId);
+    return this.create({ ...dto, patientId });
+  }
+
+  async findForPatient(userId: string) {
+    return this.findAll(await this.getPatientIdForUser(userId));
   }
 
   findAll(patientId?: string, doctorId?: string, status?: string, date?: string) {
@@ -170,6 +181,20 @@ export class BookingService {
         throw new NotFoundException(`Doctor ${doctorId} was not found in doctor service`);
       }
       throw new ServiceUnavailableException('Unable to validate doctor with doctor service');
+    }
+  }
+
+  private async getPatientIdForUser(userId: string): Promise<string> {
+    const patientServiceUrl = this.configService.get<string>('PATIENT_SERVICE_URL');
+    if (!patientServiceUrl) throw new ServiceUnavailableException('PATIENT_SERVICE_URL is not configured');
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get<PatientResponse>(`${patientServiceUrl.replace(/\/$/, '')}/patients/by-user/${encodeURIComponent(userId)}`, { headers: this.internalHeaders() }),
+      );
+      return response.data._id;
+    } catch (error: any) {
+      if (error?.response?.status === 404) throw new NotFoundException('No patient profile is linked to this account');
+      throw new ServiceUnavailableException('Unable to resolve the authenticated patient profile');
     }
   }
 

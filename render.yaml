@@ -28,6 +28,8 @@ services:
         value: https://labflow-booking-service.onrender.com
       - key: DOCTOR_SERVICE_URL
         value: https://labflow-doctor-service.onrender.com
+      - key: PATIENT_SERVICE_URL
+        value: https://labflow-patient-service.onrender.com
       - key: SAMPLE_SERVICE_URL
         value: https://labflow-sample-service.onrender.com
       - key: RESULT_SERVICE_URL

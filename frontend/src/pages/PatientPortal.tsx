@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CalendarDays, Download, FileText, IndianRupee } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { DataCell, DataTable } from '../components/ui/DataTable';
@@ -17,6 +18,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const toDate = (value: string) => new Date(value).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
 export function PatientPortal() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [patient, setPatient] = useState<CreatedPatient | null>(null);
   const [bookings, setBookings] = useState<CreatedBooking[]>([]);
@@ -59,9 +61,9 @@ export function PatientPortal() {
 
   return (
     <PageContainer>
-      <div className="mb-6 rounded-card border border-border bg-white p-5">
-        <h2 className="text-lg font-semibold">Welcome, {patient.fullName}</h2>
-        <p className="mt-1 text-sm text-ink-muted">View diagnostic reports, upcoming appointments, and billing history.</p>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-card border border-border bg-white p-5">
+        <div><h2 className="text-lg font-semibold">Welcome, {patient.fullName}</h2><p className="mt-1 text-sm text-ink-muted">View diagnostic reports, upcoming appointments, and billing history.</p></div>
+        <Button onClick={() => navigate('/patient/book')}>Book a Test</Button>
       </div>
       <div className="grid gap-6 xl:grid-cols-[1fr_330px]">
         <section className="grid gap-5">
