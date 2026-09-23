@@ -12,6 +12,7 @@ export class PatientController {
   constructor(private readonly patientService: PatientService) {}
 
   @Post()
+  @InternalService()
   @Roles('admin', 'receptionist')
   @ApiOperation({ summary: 'Create a patient profile' })
   create(@Body() createPatientDto: CreatePatientDto) {

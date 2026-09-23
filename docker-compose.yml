@@ -15,7 +15,7 @@ services:
       PATIENT_SERVICE_URL: http://patient-service:3000
       NOTIFICATION_SERVICE_URL: http://notification-service:3000
       FRONTEND_URL: http://localhost:5173
-    depends_on: [doctor-service, patient-service]
+    depends_on: [doctor-service, patient-service, notification-service]
 
   patient-service:
     build:

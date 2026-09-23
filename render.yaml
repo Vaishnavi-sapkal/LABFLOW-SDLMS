@@ -60,6 +60,10 @@ services:
         value: https://labflow-doctor-service.onrender.com
       - key: PATIENT_SERVICE_URL
         value: https://labflow-patient-service.onrender.com
+      - key: NOTIFICATION_SERVICE_URL
+        value: https://labflow-notification-service.onrender.com
+      - key: FRONTEND_URL
+        sync: false
 
   - type: web
     name: labflow-patient-service
