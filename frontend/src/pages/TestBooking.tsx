@@ -281,7 +281,7 @@ export function TestBooking() {
                 <Button size="sm" variant="outline" onClick={() => setShowPatientSelect((value) => !value)}>Change Patient</Button>
               </div>
               {showPatientSelect && (
-                <div className="mt-3 grid gap-2"><div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" size={14} /><Input aria-label="Search patients" className="h-9 pl-8 text-sm" onChange={(event) => setPatientSearch(event.target.value)} placeholder="Search name, patient ID, or mobile" value={patientSearch} /></div><select className="focus-ring h-9 w-full rounded-ui border border-border bg-white px-3 text-sm text-ink" onChange={(event) => setSelectedPatientId(event.target.value)} value={selectedPatientId}>{patients.map((patient) => <option key={patient._id} value={patient._id}>{patient.fullName} · {patient.patientId} · {patient.mobile}</option>)}</select></div>
+                  <div className="mt-3 grid gap-2"><div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" size={14} /><Input aria-label="Search patients" className="h-9 pl-8 text-sm" onChange={(event) => setPatientSearch(event.target.value)} placeholder="Search name, patient ID, mobile, or email" value={patientSearch} /></div><select className="focus-ring h-9 w-full rounded-ui border border-border bg-white px-3 text-sm text-ink" onChange={(event) => setSelectedPatientId(event.target.value)} value={selectedPatientId}>{patients.map((patient) => <option key={patient._id} value={patient._id}>{patient.fullName} | {patient.patientId} | {patient.mobile}</option>)}</select></div>
               )}
             </div>
 

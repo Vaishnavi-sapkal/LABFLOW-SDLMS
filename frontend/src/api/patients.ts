@@ -60,6 +60,16 @@ export async function createPatient(payload: CreatePatientDto): Promise<CreatedP
 
 export interface PatientPortalData { patient: CreatedPatient; bookings: import('./bookings').CreatedBooking[]; reports: import('./reports').ReportDocument[]; invoices: import('./billing').Invoice[]; }
 
+export interface Patient360Data {
+  profile: CreatedPatient;
+  bookings: import('./bookings').CreatedBooking[];
+  billing: import('./billing').Invoice[];
+  account: { portalAccountLinked: boolean };
+  samples?: import('./samples').GroupedSamples;
+  results?: import('./results').ResultDocument[];
+  reports?: import('./reports').ReportDocument[];
+}
+
 export async function getMyPatientProfile(): Promise<CreatedPatient> {
   try {
     const { data } = await client.get<CreatedPatient>('/patients/me');
@@ -76,6 +86,11 @@ export async function getMyPatientProfile(): Promise<CreatedPatient> {
 export async function getMyPatientPortal(): Promise<PatientPortalData> {
   try { return (await client.get<PatientPortalData>('/patients/me/portal')).data; }
   catch (error) { if (isAxiosError(error)) throw new Error(typeof error.response?.data?.message === 'string' ? error.response.data.message : 'Unable to load your portal.'); throw error; }
+}
+
+export async function getPatientDetails(id: string): Promise<Patient360Data> {
+  try { return (await client.get<Patient360Data>(`/patients/${id}/details`)).data; }
+  catch (error) { if (isAxiosError(error)) throw new Error(typeof error.response?.data?.message === 'string' ? error.response.data.message : 'Unable to load Patient 360 details.'); throw error; }
 }
 
 export async function updatePatient(id: string, payload: Partial<CreatePatientDto>): Promise<CreatedPatient> {

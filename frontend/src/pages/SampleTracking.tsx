@@ -44,7 +44,7 @@ const initialSampleForm: Omit<CreateSampleDto, 'handledBy'> = {
 };
 
 export function SampleTracking() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const handledBy = user?.name ?? 'Lab staff';
   const [samples, setSamples] = useState<GroupedSamples>(emptySamples);
   const [bookings, setBookings] = useState<CreatedBooking[]>([]);
@@ -81,7 +81,10 @@ export function SampleTracking() {
       setBookingsLoading(true);
       setBookingsError('');
       try {
-        const [loadedBookings, loadedPatients] = await Promise.all([listBookings(), listPatients()]);
+        const [loadedBookings, loadedPatients] = await Promise.all([
+          listBookings(),
+          role === 'Admin' ? listPatients() : Promise.resolve([]),
+        ]);
         if (!active) return;
         setBookings(loadedBookings.filter((booking) => booking.status === 'pending' || booking.status === 'confirmed'));
         setPatients(loadedPatients);
@@ -93,7 +96,7 @@ export function SampleTracking() {
     }
     void loadBookingsAwaitingCollection();
     return () => { active = false; };
-  }, []);
+  }, [role]);
 
   const openSampleFormForBooking = (booking: CreatedBooking) => {
     const patient = patients.find((item) => item._id === booking.patientId);

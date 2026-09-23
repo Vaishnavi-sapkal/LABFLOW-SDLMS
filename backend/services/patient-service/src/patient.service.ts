@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -40,6 +40,7 @@ export class PatientService {
             { fullName: { $regex: this.escapeRegex(search), $options: 'i' } },
             { patientId: { $regex: this.escapeRegex(search), $options: 'i' } },
             { mobile: { $regex: this.escapeRegex(search), $options: 'i' } },
+            { email: { $regex: this.escapeRegex(search), $options: 'i' } },
           ],
         }
       : {};
@@ -80,10 +81,49 @@ export class PatientService {
     return { patient, bookings, reports, invoices };
   }
 
+  async getDetails(id: string, role: string) {
+    if (role !== 'admin' && role !== 'receptionist') {
+      throw new ForbiddenException('Patient 360 is only available to administrators and receptionists');
+    }
+
+    const patient = await this.findOne(id);
+    const patientId = String(patient._id);
+    const headers = this.internalHeaders();
+
+    if (role === 'receptionist') {
+      const [bookings, billing] = await Promise.all([
+        this.loadInternal('BOOKING_SERVICE_URL', `/bookings?patientId=${encodeURIComponent(patientId)}`, headers),
+        this.loadInternal('BILLING_SERVICE_URL', `/billing?patientId=${encodeURIComponent(patientId)}`, headers),
+      ]);
+      return { profile: patient, bookings, billing, account: this.accountSummary(patient) };
+    }
+
+    const [bookings, samples, results, reports, billing] = await Promise.all([
+      this.loadInternal('BOOKING_SERVICE_URL', `/bookings?patientId=${encodeURIComponent(patientId)}`, headers),
+      this.loadInternal('SAMPLE_SERVICE_URL', `/samples?patientId=${encodeURIComponent(patientId)}`, headers),
+      this.loadInternal('RESULT_SERVICE_URL', `/results?patientId=${encodeURIComponent(patientId)}`, headers),
+      this.loadInternal('REPORT_SERVICE_URL', `/reports?patientId=${encodeURIComponent(patientId)}`, headers),
+      this.loadInternal('BILLING_SERVICE_URL', `/billing?patientId=${encodeURIComponent(patientId)}`, headers),
+    ]);
+    return { profile: patient, bookings, samples, results, reports, billing, account: this.accountSummary(patient) };
+  }
+
   private internalHeaders() {
     const secret = this.configService.get<string>('INTERNAL_SERVICE_SECRET');
     if (!secret) throw new ServiceUnavailableException('INTERNAL_SERVICE_SECRET is not configured');
     return { 'x-internal-service-key': secret };
+  }
+
+  private async loadInternal(key: string, path: string, headers: Record<string, string>) {
+    const base = this.configService.get<string>(key);
+    if (!base) throw new ServiceUnavailableException(`${key} is not configured`);
+    const response = await fetch(`${base.replace(/\/$/, '')}${path}`, { headers });
+    if (!response.ok) throw new ServiceUnavailableException(`Unable to load patient details (${response.status})`);
+    return response.json();
+  }
+
+  private accountSummary(patient: PatientDocument) {
+    return { portalAccountLinked: Boolean(patient.userId) };
   }
 
   async update(id: string, updatePatientDto: UpdatePatientDto) {

@@ -29,6 +29,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-your_super_secret_jwt_key}
       INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-replace-with-a-long-random-secret}
       BOOKING_SERVICE_URL: http://booking-service:3000
+      SAMPLE_SERVICE_URL: http://sample-service:3000
+      RESULT_SERVICE_URL: http://result-service:3000
       REPORT_SERVICE_URL: http://report-service:3000
       BILLING_SERVICE_URL: http://billing-service:3000
 

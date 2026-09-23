@@ -80,6 +80,10 @@ services:
       - fromGroup: labflow-shared
       - key: BOOKING_SERVICE_URL
         value: https://labflow-booking-service.onrender.com
+      - key: SAMPLE_SERVICE_URL
+        value: https://labflow-sample-service.onrender.com
+      - key: RESULT_SERVICE_URL
+        value: https://labflow-result-service.onrender.com
       - key: REPORT_SERVICE_URL
         value: https://labflow-report-service.onrender.com
       - key: BILLING_SERVICE_URL

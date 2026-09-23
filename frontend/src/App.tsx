@@ -14,6 +14,7 @@ import { ForgotPassword } from './pages/ForgotPassword';
 import { Notifications } from './pages/Notifications';
 import { PatientPortal } from './pages/PatientPortal';
 import { PatientRegistration } from './pages/PatientRegistration';
+import { PatientDetails } from './pages/PatientDetails';
 import { ResultEntry } from './pages/ResultEntry';
 import { ResultVerification } from './pages/ResultVerification';
 import { ReportVerification } from './pages/ReportVerification';
@@ -76,6 +77,13 @@ export default function App() {
             }
           >
             <Route index element={<PatientRegistration />} />
+          </Route>
+
+          <Route
+            path="/patients/:id"
+            element={<ProtectedRoute allowedRoles={['Admin', 'Receptionist']} />}
+          >
+            <Route index element={<PatientDetails />} />
           </Route>
 
           <Route

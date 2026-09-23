@@ -21,8 +21,8 @@ export class PatientController {
 
   @Get()
   @InternalService()
-  @Roles('admin', 'receptionist', 'doctor', 'technician', 'lab_technician')
-  @ApiOperation({ summary: 'List patient profiles, optionally filtered by name, patient ID, or mobile number' })
+  @Roles('admin', 'receptionist')
+  @ApiOperation({ summary: 'List patient profiles, optionally filtered by name, patient ID, mobile number, or email address' })
   findAll(@Query('search') search?: string) {
     return this.patientService.findAll(search);
   }
@@ -46,6 +46,13 @@ export class PatientController {
   @ApiOperation({ summary: 'Delete a patient profile linked to an auth user (internal)' })
   removeByUserId(@Param('userId') userId: string) {
     return this.patientService.removeByUserId(userId);
+  }
+
+  @Get(':id/details')
+  @Roles('admin', 'receptionist')
+  @ApiOperation({ summary: 'Get role-filtered Patient 360 details for an administrator or receptionist' })
+  findDetails(@Param('id') id: string, @Req() request: any) {
+    return this.patientService.getDetails(id, request.user.role);
   }
 
   @Get(':id')

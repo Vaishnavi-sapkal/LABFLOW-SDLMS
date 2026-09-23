@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Save } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Checkbox } from '../components/ui/Checkbox';
@@ -73,6 +73,7 @@ function displayGender(gender: string) {
 }
 
 export function PatientRegistration() {
+  const navigate = useNavigate();
   const { role } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [form, setForm] = useState(initialForm);
@@ -212,7 +213,7 @@ export function PatientRegistration() {
             <button aria-selected={!accountTab} className={`shrink-0 border-b-2 px-3 py-3 text-sm font-semibold sm:px-4 ${!accountTab ? 'border-brand-600 text-brand-700' : 'border-transparent text-ink-muted hover:text-ink'}`} onClick={() => setSearchParams({})} role="tab" type="button">Patient</button>
             <button aria-selected={accountTab} className={`shrink-0 border-b-2 px-3 py-3 text-sm font-semibold sm:px-4 ${accountTab ? 'border-brand-600 text-brand-700' : 'border-transparent text-ink-muted hover:text-ink'}`} onClick={() => setSearchParams({ tab: 'account' })} role="tab" type="button">Register Patient Account</button>
           </div>
-          <section className="card p-4 sm:p-5"><h2 className="mb-3 text-base font-semibold">Find an existing patient</h2><SearchBar aria-label="Search existing patients" onChange={(event) => setExistingPatientSearch(event.target.value)} placeholder="Search name, patient ID, or mobile" value={existingPatientSearch} />{patientSearchError ? <p className="mt-2 text-sm text-danger">{patientSearchError}</p> : null}{existingPatients.length ? <div className="mt-3 grid gap-2">{existingPatients.map((patient) => <button className="rounded-ui border border-border px-3 py-2 text-left text-sm hover:bg-surface-muted" key={patient._id ?? patient.patientId} onClick={() => selectExistingPatient(patient)} type="button"><span className="block truncate font-semibold">{patient.fullName}</span><span className="block truncate text-ink-muted sm:inline sm:ml-2">{patient.patientId} · {patient.mobile}</span></button>)}</div> : existingPatientSearch ? <p className="mt-2 text-sm text-ink-muted">No matching patients.</p> : null}</section>
+          <section className="card p-4 sm:p-5"><h2 className="mb-3 text-base font-semibold">Find an existing patient</h2><SearchBar aria-label="Search existing patients" onChange={(event) => setExistingPatientSearch(event.target.value)} placeholder="Search name, patient ID, mobile, or email" value={existingPatientSearch} />{patientSearchError ? <p className="mt-2 text-sm text-danger">{patientSearchError}</p> : null}{existingPatients.length ? <div className="mt-3 grid gap-2">{existingPatients.map((patient) => <div className="flex items-center gap-2 rounded-ui border border-border px-3 py-2 text-sm hover:bg-surface-muted" key={patient._id ?? patient.patientId}><button className="min-w-0 flex-1 text-left" onClick={() => selectExistingPatient(patient)} type="button"><span className="block truncate font-semibold">{patient.fullName}</span><span className="block truncate text-ink-muted sm:inline sm:ml-2">{patient.patientId} | {patient.mobile}</span></button>{patient._id ? <button className="shrink-0 text-xs font-semibold text-brand-700 underline" onClick={() => navigate(`/patients/${patient._id}`)} type="button">Patient 360</button> : null}</div>)}</div> : existingPatientSearch ? <p className="mt-2 text-sm text-ink-muted">No matching patients.</p> : null}</section>
           <FormSection title="Personal Details" description="Capture verified patient demographics.">
             <Field label="Full Name"><Input value={form.fullName} onChange={(event) => setForm((current) => ({ ...current, fullName: event.target.value }))} /></Field>
             <Field label="Date of Birth"><Input value={form.dateOfBirth} onChange={(event) => setForm((current) => ({ ...current, dateOfBirth: event.target.value }))} type="date" /></Field>
