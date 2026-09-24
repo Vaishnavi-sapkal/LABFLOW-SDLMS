@@ -110,3 +110,16 @@ export async function updatePatient(id: string, payload: Partial<CreatePatientDt
     throw error;
   }
 }
+
+export async function updateMyPatientProfile(payload: Partial<CreatePatientDto>): Promise<CreatedPatient> {
+  try {
+    const { data } = await client.patch<CreatedPatient>('/patients/me', payload);
+    return data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      const message = error.response?.data?.message;
+      throw new Error(typeof message === 'string' ? message : 'Unable to update your patient profile.');
+    }
+    throw error;
+  }
+}

@@ -30,6 +30,20 @@ export class DoctorController {
   @ApiOperation({ summary: 'Get the authenticated doctor profile' })
   findMe(@Req() request: any) { return this.doctorService.findByUserId(request.user.userId); }
 
+  @Patch('me')
+  @Roles('doctor')
+  @ApiOperation({ summary: 'Update the authenticated doctor profile' })
+  async updateMe(@Req() request: any, @Body() updateDoctorDto: UpdateDoctorDto) {
+    const doctor = await this.doctorService.findByUserId(request.user.userId);
+    const { specialization, qualification, registrationNumber, mobile } = updateDoctorDto;
+    return this.doctorService.update(String(doctor._id), {
+      specialization,
+      qualification,
+      registrationNumber,
+      mobile,
+    });
+  }
+
   @Patch('by-user/:userId/deactivate')
   @InternalService()
   @ApiOperation({ summary: 'Deactivate a doctor profile linked to an auth user (internal)' })

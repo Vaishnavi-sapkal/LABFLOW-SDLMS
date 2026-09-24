@@ -5,6 +5,7 @@
                     "start:dev":  "nest start --watch",
                     "build":  "tsc -p tsconfig.json",
                     "test": "jest --config ../../../jest.config.js --runInBand",
+                    "migrate:drop-mobile-index": "npm run build && node dist/scripts/drop-mobile-unique-index.js",
                     "start":  "node dist/main.js"
                 },
     "devDependencies":  {

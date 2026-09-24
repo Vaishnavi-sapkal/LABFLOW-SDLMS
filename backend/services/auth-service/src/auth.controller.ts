@@ -10,6 +10,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
   Param,
+  Patch,
   Post,
   Req,
   UnauthorizedException,
@@ -33,6 +34,8 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { PatientSignupDto } from './dto/patient-signup.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { UpdateMeDto } from './dto/update-me.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { RegistrationGuard } from './registration.guard';
 
 @ApiTags('Authentication')
@@ -75,7 +78,7 @@ export class AuthController {
     try {
       return await this.authLogic.patientSignup(data);
     } catch (error) {
-      if (error instanceof Error && (error.message === 'Email already registered' || error.message === 'A patient with this mobile number already exists')) {
+      if (error instanceof Error && error.message === 'Email already registered') {
         throw new ConflictException(error.message);
       }
       if (error instanceof BadRequestException || error instanceof ServiceUnavailableException) throw error;
@@ -206,6 +209,86 @@ export class AuthController {
         throw new UnauthorizedException(error.message);
       }
       throw new InternalServerErrorException('Unable to validate the user account');
+    }
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get the current user profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'Current user profile returned',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid, missing, or inactive JWT user',
+  })
+  async getMe(@Req() req: any) {
+    try {
+      return await this.authLogic.getMyProfile(req.user.userId);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'User account is inactive') {
+        throw new UnauthorizedException(error.message);
+      }
+      throw new InternalServerErrorException('Unable to validate the user account');
+    }
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Update the current user profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'Current user profile updated',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid, missing, or inactive JWT user',
+  })
+  async updateMe(@Req() req: any, @Body() data: UpdateMeDto) {
+    try {
+      return await this.authLogic.updateMyProfile(req.user.userId, data);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'User account is inactive') {
+        throw new UnauthorizedException(error.message);
+      }
+      throw new InternalServerErrorException('Unable to update the user account');
+    }
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Change the current user password' })
+  @ApiResponse({
+    status: 201,
+    description: 'Password updated successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'New password validation failed',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid credentials or inactive JWT user',
+  })
+  async changePassword(@Req() req: any, @Body() data: ChangePasswordDto) {
+    try {
+      return await this.authLogic.changeMyPassword(req.user.userId, data);
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof UnauthorizedException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      if (error instanceof Error && error.message === 'User account is inactive') {
+        throw new UnauthorizedException(error.message);
+      }
+      throw new InternalServerErrorException('Unable to update the password');
     }
   }
 

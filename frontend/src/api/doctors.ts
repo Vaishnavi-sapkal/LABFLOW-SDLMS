@@ -3,6 +3,7 @@ import client from './client';
 
 export interface DoctorDocument {
   _id: string;
+  doctorId?: string;
   fullName: string;
   specialization?: string;
   qualification?: string;
@@ -57,6 +58,19 @@ export async function getDoctor(id: string): Promise<DoctorDocument> {
 export async function getMyDoctor(): Promise<DoctorDocument> {
   try { return (await client.get<DoctorDocument>('/doctors/me')).data; }
   catch (error) { if (isAxiosError(error)) throw new Error(typeof error.response?.data?.message === 'string' ? error.response.data.message : 'Unable to load your doctor profile.'); throw error; }
+}
+
+export async function updateMyDoctorProfile(payload: Pick<UpdateDoctorDto, 'specialization' | 'qualification' | 'registrationNumber' | 'mobile'>): Promise<DoctorDocument> {
+  try {
+    const { data } = await client.patch<DoctorDocument>('/doctors/me', payload);
+    return data;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      const message = error.response?.data?.message;
+      throw new Error(typeof message === 'string' ? message : 'Unable to update your doctor profile.');
+    }
+    throw error;
+  }
 }
 
 export async function createDoctor(payload: CreateDoctorDto): Promise<DoctorDocument> {

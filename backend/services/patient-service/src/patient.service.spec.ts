@@ -11,6 +11,7 @@ describe('PatientService', () => {
     create: jest.fn(),
     find: jest.fn(),
     findById: jest.fn(),
+    findOne: jest.fn(),
     findByIdAndUpdate: jest.fn(),
     findByIdAndDelete: jest.fn(),
   };
@@ -42,6 +43,19 @@ describe('PatientService', () => {
 
     await expect(service.create(dto)).resolves.toBe(patient);
     expect(model.create).toHaveBeenCalledTimes(2);
+  });
+
+  it('allows multiple patients to be created with the same mobile number', async () => {
+    const firstDto = { fullName: 'Asha Singh', mobile: '9876543210' } as any;
+    const secondDto = { fullName: 'Ravi Singh', mobile: '9876543210' } as any;
+    const firstPatient = { _id: 'patient-1', ...firstDto };
+    const secondPatient = { _id: 'patient-2', ...secondDto };
+    model.create.mockResolvedValueOnce(firstPatient).mockResolvedValueOnce(secondPatient);
+
+    await expect(service.create(firstDto)).resolves.toBe(firstPatient);
+    await expect(service.create(secondDto)).resolves.toBe(secondPatient);
+    expect(model.create).toHaveBeenCalledWith(firstDto);
+    expect(model.create).toHaveBeenCalledWith(secondDto);
   });
 
   it('turns two duplicate ID collisions into a conflict', async () => {

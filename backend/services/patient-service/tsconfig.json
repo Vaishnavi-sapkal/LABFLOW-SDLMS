@@ -3,7 +3,8 @@
                     "src/**/*.spec.ts"
                 ],
     "include":  [
-                    "src/**/*.ts"
+                    "src/**/*.ts",
+                    "scripts/**/*.ts"
                 ],
     "compilerOptions":  {
                             "allowSyntheticDefaultImports":  true,

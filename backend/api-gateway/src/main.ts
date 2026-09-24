@@ -65,7 +65,7 @@ async function bootstrap() {
       createProxyMiddleware({
         target,
         changeOrigin: true,
-        pathRewrite: { [`^${prefix}`]: prefix.replace(/^\/api/, '') },
+        pathRewrite: (_path, request) => request.originalUrl.replace(/^\/api/, ''),
         onError: (_error, _request, response) => {
           if (!response.headersSent) {
             response.status(502).json({ error: 'Service unavailable' });

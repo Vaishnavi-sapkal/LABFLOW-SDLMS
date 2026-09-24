@@ -10,7 +10,9 @@ import {
 import {
   clearStoredSession,
   getCurrentUser,
+  getMyProfile,
   login as authenticate,
+  storeUser,
   type AuthenticatedUser,
 } from '../api/auth';
 
@@ -30,6 +32,8 @@ interface AuthContextValue {
   user: AuthenticatedUser | null;
   login: (email: string, password: string) => Promise<Role>;
   logout: () => void;
+  refreshUser: () => Promise<AuthenticatedUser>;
+  updateUser: (user: AuthenticatedUser) => void;
   landingPath: string;
 }
 
@@ -85,6 +89,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRole('Admin');
   };
 
+  const updateUser = (authenticatedUser: AuthenticatedUser) => {
+    storeUser(authenticatedUser);
+    setUser(authenticatedUser);
+    setRole(toRole(authenticatedUser.role));
+  };
+
+  const refreshUser = async () => {
+    const authenticatedUser = await getMyProfile();
+    updateUser(authenticatedUser);
+    return authenticatedUser;
+  };
+
   const value = useMemo(
     () => ({
       role,
@@ -92,6 +108,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       login,
       logout,
+      refreshUser,
+      updateUser,
       landingPath: roleLanding[role],
     }),
     [role, user],

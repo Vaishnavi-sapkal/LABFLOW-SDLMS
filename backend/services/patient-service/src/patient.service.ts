@@ -22,9 +22,6 @@ export class PatientService {
       } catch (error: any) {
         if (error?.code !== 11000 || attempt === 1) {
           if (error?.code === 11000) {
-            if (error?.keyPattern?.mobile) {
-              throw new ConflictException('A patient with this mobile number already exists');
-            }
             throw new ConflictException('Could not generate a unique patient ID');
           }
           throw error;

@@ -9,7 +9,7 @@ import { SearchBar } from '../components/ui/SearchBar';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { PageContainer } from '../components/layout/PageContainer';
 import { StepTracker } from '../components/laboratory/StepTracker';
-import { createPatient, listPatients, updatePatient, type BloodGroup, type CreatedPatient, type PatientGender } from '../api/patients';
+import { createPatient, listPatients, type BloodGroup, type CreatedPatient, type PatientGender } from '../api/patients';
 import { createOrLinkPatientAccount } from '../api/patientAccountProvisioning';
 import { useAuth } from '../app/AuthContext';
 
@@ -186,14 +186,7 @@ export function PatientRegistration() {
         return;
       }
 
-      const mobileMatches = await listPatients(patientPayload.mobile);
-      const existingPatient = mobileMatches.find((patient) => patient.mobile.replace(/\D/g, '') === patientPayload.mobile.replace(/\D/g, ''));
-      if (existingPatient && !existingPatient._id) {
-        throw new Error('The matched patient profile cannot be updated because it has no database ID.');
-      }
-      const patient = existingPatient
-        ? await updatePatient(existingPatient._id!, patientPayload)
-        : await createPatient(patientPayload);
+      const patient = await createPatient(patientPayload);
 
       setRegisteredPatient(patient);
       setRegistered(true);

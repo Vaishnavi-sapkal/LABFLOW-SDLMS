@@ -1,4 +1,4 @@
-import { BadRequestException, Module, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, Module, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { JwtModule, JwtService } from '@nestjs/jwt';
@@ -63,6 +63,17 @@ import { RegistrationGuard } from './registration.guard';
         jwtService: JwtService,
         configService: ConfigService,
       ) => {
+        const toProfileResponse = (user: any) => ({
+          id: String(user._id),
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isActive: user.isActive,
+          emailVerified: user.emailVerified,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        });
+
         const sendVerificationEmail = async (user: UserDocument, token: string) => {
           const notificationServiceUrl = configService.get<string>('NOTIFICATION_SERVICE_URL');
           const internalSecret = configService.get<string>('INTERNAL_SERVICE_SECRET');
@@ -352,6 +363,52 @@ import { RegistrationGuard } from './registration.guard';
           const user = await userModel.findById(userId).select('-password').lean().exec();
           if (!user || !user.isActive) throw new Error('User account is inactive');
           return { userId: String(user._id), email: user.email, role: user.role };
+        },
+
+        getMyProfile: async (userId: string) => {
+          const user = await userModel
+            .findById(userId)
+            .select('-password -verificationTokenHash -verificationTokenExpiresAt -resetPasswordTokenHash -resetPasswordExpiresAt')
+            .lean()
+            .exec();
+          if (!user || !user.isActive) throw new Error('User account is inactive');
+          return toProfileResponse(user);
+        },
+
+        updateMyProfile: async (userId: string, data: any) => {
+          const user = await userModel.findById(userId).exec();
+          if (!user || !user.isActive) throw new Error('User account is inactive');
+
+          if (Object.prototype.hasOwnProperty.call(data, 'name')) {
+            user.name = data.name;
+          }
+
+          await user.save();
+          return toProfileResponse(user);
+        },
+
+        changeMyPassword: async (userId: string, data: any) => {
+          const user = await userModel.findById(userId).exec();
+          if (!user) throw new NotFoundException('User account was not found');
+          if (!user.isActive) throw new Error('User account is inactive');
+          if (data.newPassword !== data.confirmNewPassword) {
+            throw new BadRequestException('New password and confirmation do not match');
+          }
+
+          const currentPasswordMatches = await bcrypt.compare(data.currentPassword, user.password);
+          if (!currentPasswordMatches) {
+            throw new UnauthorizedException('Current password is incorrect');
+          }
+
+          const isSamePassword = await bcrypt.compare(data.newPassword, user.password);
+          if (isSamePassword) {
+            throw new BadRequestException('New password must be different from the current password');
+          }
+
+          user.password = await bcrypt.hash(data.newPassword, 10);
+          await user.save();
+
+          return { message: 'Password updated successfully' };
         },
 
         deleteUser: async (id: string, actorUserId: string) => {

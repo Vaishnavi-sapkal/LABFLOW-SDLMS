@@ -34,6 +34,15 @@ export class PatientController {
     return this.patientService.findByUserId(request.user.userId);
   }
 
+  @Patch('me')
+  @Roles('patient')
+  @ApiOperation({ summary: 'Update the authenticated patient profile' })
+  async updateMe(@Req() request: any, @Body() updatePatientDto: UpdatePatientDto) {
+    const patient = await this.patientService.findByUserId(request.user.userId);
+    const { patientId, userId, ...allowedUpdates } = updatePatientDto as UpdatePatientDto & { patientId?: string; userId?: string };
+    return this.patientService.update(String(patient._id), allowedUpdates);
+  }
+
   @Get('me/portal')
   @Roles('patient')
   @ApiOperation({ summary: 'Get the authenticated patient portal data' })

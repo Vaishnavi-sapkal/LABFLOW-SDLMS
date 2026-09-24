@@ -7,6 +7,9 @@ export interface AuthenticatedUser {
   email: string;
   role: string;
   isActive: boolean;
+  emailVerified?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface LoginResponse {
@@ -53,7 +56,7 @@ export async function login(email: string, password: string): Promise<LoginRespo
   try {
     const { data } = await client.post<AuthServiceLoginResponse>('/auth/login', { email, password });
     localStorage.setItem('labflow_token', data.access_token);
-    localStorage.setItem('labflow_user', JSON.stringify(data.user));
+    storeUser(data.user);
 
     return { token: data.access_token, user: data.user };
   } catch (error) {
@@ -132,6 +135,35 @@ export async function resetPassword(token: string, newPassword: string): Promise
   }
 }
 
+export async function getMyProfile(): Promise<AuthenticatedUser> {
+  try {
+    const { data } = await client.get<AuthenticatedUser>('/auth/me');
+    storeUser(data);
+    return data;
+  } catch (error) {
+    throwApiError(error, 'Unable to load your profile.');
+  }
+}
+
+export async function updateMyProfile(payload: { name: string }): Promise<AuthenticatedUser> {
+  try {
+    const { data } = await client.patch<AuthenticatedUser>('/auth/me', payload);
+    storeUser(data);
+    return data;
+  } catch (error) {
+    throwApiError(error, 'Unable to update your profile.');
+  }
+}
+
+export async function changePassword(payload: { currentPassword: string; newPassword: string; confirmNewPassword: string }): Promise<{ message: string }> {
+  try {
+    const { data } = await client.post<{ message: string }>('/auth/change-password', payload);
+    return data;
+  } catch (error) {
+    throwApiError(error, 'Unable to update your password.');
+  }
+}
+
 export async function listAccounts(): Promise<AccountSummary[]> {
   try {
     const { data } = await client.get<AccountSummary[]>('/auth/users');
@@ -191,6 +223,10 @@ export async function getCurrentUser(): Promise<AuthenticatedUser> {
 export function clearStoredSession() {
   localStorage.removeItem('labflow_token');
   localStorage.removeItem('labflow_user');
+}
+
+export function storeUser(user: AuthenticatedUser) {
+  localStorage.setItem('labflow_user', JSON.stringify(user));
 }
 
 function getStoredUser(): AuthenticatedUser | null {

@@ -1,8 +1,6 @@
 import { registerAccount } from './auth';
 import {
   createPatient,
-  listPatients,
-  updatePatient,
   type CreatedPatient,
   type CreatePatientDto,
 } from './patients';
@@ -12,13 +10,8 @@ export interface PatientAccountProvisioningInput extends CreatePatientDto {
   rollbackAccount?: (userId: string) => Promise<void>;
 }
 
-function normalizedMobile(value: string) {
-  return value.replace(/\D/g, '');
-}
-
 /**
- * Creates the portal user and either creates a patient profile or links that
- * user to the existing profile with the same mobile number.
+ * Creates the portal user and a linked patient profile.
  */
 export async function createOrLinkPatientAccount(
   input: PatientAccountProvisioningInput,
@@ -31,17 +24,6 @@ export async function createOrLinkPatientAccount(
     throw new Error('An email address and temporary password are required for a patient account.');
   }
 
-  const mobileMatches = await listPatients(input.mobile);
-  const existingPatient = mobileMatches.find(
-    (patient) => normalizedMobile(patient.mobile) === normalizedMobile(input.mobile),
-  );
-
-  if (existingPatient?.userId) {
-    throw new Error('This mobile number is already linked to a patient account.');
-  }
-  if (existingPatient && !existingPatient._id) {
-    throw new Error('The matched patient profile cannot be linked because it has no database ID.');
-  }
   const account = await registerAccount({
     name: input.fullName,
     email: input.email,
@@ -52,9 +34,7 @@ export async function createOrLinkPatientAccount(
   const profilePayload: CreatePatientDto = { ...patientPayload, userId: account.id };
 
   try {
-    const patient = existingPatient
-      ? await updatePatient(existingPatient._id!, profilePayload)
-      : await createPatient(profilePayload);
+    const patient = await createPatient(profilePayload);
 
     return { accountId: account.id, patient };
   } catch (profileError) {

@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState,
   type ChangeEvent,
   type KeyboardEvent,
@@ -14,15 +15,9 @@ import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../app/AuthContext';
 import { useUnreadNotificationsCount } from '../../hooks/useUnreadNotificationsCount';
+import { ChangePasswordModal } from '../profile/ChangePasswordModal';
+import { ProfileModal } from '../profile/ProfileModal';
 import { SearchBar } from '../ui/SearchBar';
-
-const roleLabels = {
-  Admin: 'Administrator',
-  Doctor: 'Dr. Priya Sharma',
-  'Lab Technician': 'Lab Technician',
-  Receptionist: 'Receptionist',
-  Patient: 'Patient',
-} as const;
 
 const roleInitials = {
   Admin: 'A',
@@ -54,12 +49,16 @@ export function Header({
   onMobileMenu,
   onToggleSidebar,
 }: HeaderProps) {
-  const { role } = useAuth();
+  const { role, user, logout } = useAuth();
   const navigate = useNavigate();
   const unreadCount = useUnreadNotificationsCount();
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileModalMode, setProfileModalMode] = useState<'view' | 'edit' | null>(null);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
 
   // Sidebar state only for desktop icon appearance
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -85,6 +84,29 @@ export function Header({
       );
     };
   }, []);
+
+  useEffect(() => {
+    if (!profileOpen) return undefined;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!profileMenuRef.current?.contains(event.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setProfileOpen(false);
+      }
+    };
+
+    window.addEventListener('mousedown', handlePointerDown);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [profileOpen]);
 
   const filteredItems = search.trim()
     ? searchItems.filter((item) =>
@@ -133,6 +155,25 @@ export function Header({
     setSearch('');
     setSearchOpen(false);
   };
+
+  const openProfileModal = (mode: 'view' | 'edit') => {
+    setProfileModalMode(mode);
+    setProfileOpen(false);
+  };
+
+  const openPasswordModal = () => {
+    setPasswordModalOpen(true);
+    setProfileOpen(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setProfileOpen(false);
+    navigate('/login');
+  };
+
+  const displayName = user?.name?.trim() || user?.email || role;
+  const firstName = displayName.split(' ')[0] || displayName;
 
   return (
     <header className="z-10 flex h-[var(--size-header)] shrink-0 items-center gap-2 border-b border-border bg-white px-3 lg:gap-3 lg:px-4">
@@ -241,33 +282,49 @@ export function Header({
         </button>
 
         {/* PROFILE */}
-        <button
-          className="hidden cursor-pointer items-center gap-2 rounded-md px-2 py-1 transition hover:bg-[rgb(var(--color-muted))] sm:flex"
-          type="button"
-          onClick={() => navigate('/dashboard')}
-        >
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-brand-600 to-accent text-xs font-bold text-white">
-            {roleInitials[role]}
-          </span>
-
-          <span className="text-left">
-            <span className="block text-[13px] font-semibold leading-tight text-ink">
-              {roleLabels[role].split(' ')[0]}
+        <div className="relative hidden sm:block" ref={profileMenuRef}>
+          <button
+            aria-expanded={profileOpen}
+            aria-haspopup="menu"
+            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 transition hover:bg-[rgb(var(--color-muted))]"
+            type="button"
+            onClick={() => setProfileOpen((current) => !current)}
+          >
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-brand-600 to-accent text-xs font-bold text-white">
+              {roleInitials[role]}
             </span>
 
-            <span className="block text-[11px] capitalize leading-tight text-ink-muted">
-              {role}
-            </span>
-          </span>
+            <span className="text-left">
+              <span className="block max-w-[120px] truncate text-[13px] font-semibold leading-tight text-ink">
+                {firstName}
+              </span>
 
-          <ChevronDown
-            size={16}
-            strokeWidth={1.8}
-            className="text-ink-muted"
-          />
-        </button>
+              <span className="block text-[11px] capitalize leading-tight text-ink-muted">
+                {role}
+              </span>
+            </span>
+
+            <ChevronDown
+              size={16}
+              strokeWidth={1.8}
+              className="text-ink-muted"
+            />
+          </button>
+
+          {profileOpen ? (
+            <div className="absolute right-0 top-[46px] z-50 w-48 overflow-hidden rounded-md border border-[#dce5ee] bg-white py-1 shadow-[0_12px_30px_rgba(15,35,60,0.12)]" role="menu">
+              <button className="block w-full cursor-pointer px-4 py-3 text-left text-[13px] text-[#40566b] transition hover:bg-[#f1f7fb] hover:text-[#087eae]" onClick={() => openProfileModal('view')} role="menuitem" type="button">View Profile</button>
+              <button className="block w-full cursor-pointer px-4 py-3 text-left text-[13px] text-[#40566b] transition hover:bg-[#f1f7fb] hover:text-[#087eae]" onClick={() => openProfileModal('edit')} role="menuitem" type="button">Edit Profile</button>
+              <button className="block w-full cursor-pointer px-4 py-3 text-left text-[13px] text-[#40566b] transition hover:bg-[#f1f7fb] hover:text-[#087eae]" onClick={openPasswordModal} role="menuitem" type="button">Change Password</button>
+              <div className="my-1 border-t border-[#dce5ee]" />
+              <button className="block w-full cursor-pointer px-4 py-3 text-left text-[13px] text-[#c24141] transition hover:bg-[#fff5f5]" onClick={handleLogout} role="menuitem" type="button">Logout</button>
+            </div>
+          ) : null}
+        </div>
 
       </div>
+      {profileModalMode ? <ProfileModal initialMode={profileModalMode} onClose={() => setProfileModalMode(null)} /> : null}
+      {passwordModalOpen ? <ChangePasswordModal onClose={() => setPasswordModalOpen(false)} /> : null}
     </header>
   );
 }
