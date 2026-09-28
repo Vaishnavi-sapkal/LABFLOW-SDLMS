@@ -24,7 +24,7 @@ RUN case "$SERVICE_PATH" in \
       backend/services/verification-service) WORKSPACE="@labflow/verification-service" ;; \
       *) echo "Unsupported SERVICE_PATH: $SERVICE_PATH" >&2; exit 1 ;; \
     esac && npm run build --workspace="$WORKSPACE"
-
+    
 FROM node:20-alpine AS runtime
 
 ARG SERVICE_PATH
@@ -36,4 +36,4 @@ COPY --from=build /app/${SERVICE_PATH}/dist ./dist
 
 EXPOSE 3000
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
