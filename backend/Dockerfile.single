@@ -1,0 +1,72 @@
+# LabFlow - Single Container Production Image
+# API Gateway + all 12 backend services
+
+# ============================================================
+# BUILD STAGE
+# ============================================================
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+COPY backend ./backend
+
+RUN npm ci
+
+# Build API Gateway + all backend services
+RUN npm run build --workspace=@labflow/api-gateway \
+ && npm run build --workspace=@labflow/auth-service \
+ && npm run build --workspace=@labflow/patient-service \
+ && npm run build --workspace=@labflow/doctor-service \
+ && npm run build --workspace=@labflow/test-service \
+ && npm run build --workspace=@labflow/booking-service \
+ && npm run build --workspace=@labflow/sample-service \
+ && npm run build --workspace=@labflow/result-service \
+ && npm run build --workspace=@labflow/verification-service \
+ && npm run build --workspace=@labflow/billing-service \
+ && npm run build --workspace=@labflow/notification-service \
+ && npm run build --workspace=@labflow/report-service \
+ && npm run build --workspace=@labflow/dashboard-service
+
+
+# ============================================================
+# RUNTIME STAGE
+# ============================================================
+FROM node:20-alpine AS runtime
+
+WORKDIR /app
+
+# wget is required for Docker healthcheck.
+# Supervisor is intentionally NOT installed.
+RUN apk add --no-cache wget
+
+# Copy production dependencies and compiled backend
+COPY --from=build /app/package.json /app/package-lock.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/backend ./backend
+
+# Copy startup script
+COPY backend/start-all.sh /app/start-all.sh
+
+RUN chmod +x /app/start-all.sh
+
+
+# ============================================================
+# ENVIRONMENT
+# ============================================================
+ENV PORT=10000
+
+EXPOSE 10000
+
+
+# ============================================================
+# HEALTHCHECK
+# ============================================================
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=5 \
+  CMD wget -qO- http://127.0.0.1:${PORT}/health || exit 1
+
+
+# ============================================================
+# START
+# ============================================================
+CMD ["/app/start-all.sh"]
