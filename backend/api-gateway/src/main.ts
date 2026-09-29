@@ -38,65 +38,91 @@ async function bootstrap() {
     process.env.AUTH_SERVICE_URL ?? 'http://localhost:3001'
   ).replace(/\/$/, '');
 
-  app.use('/api', async (request: any, response: any, next: () => void) => {
-    const path = request.path as string;
+  app.use(
+    '/api',
+    async (request: any, response: any, next: () => void) => {
+      const path = request.path as string;
 
-    const isPublic =
-      request.method === 'OPTIONS' ||
-      (
-        request.method === 'POST' &&
+      // ----------------------------------------------------------
+      // HANDLE CORS PREFLIGHT REQUESTS
+      // ----------------------------------------------------------
+      //
+      // Browser sends OPTIONS before many cross-origin requests.
+      // We handle it at the API Gateway itself instead of forwarding
+      // it to individual backend services.
+      //
+      if (request.method === 'OPTIONS') {
+        return response.status(204).end();
+      }
+
+      // ----------------------------------------------------------
+      // PUBLIC ENDPOINTS
+      // ----------------------------------------------------------
+
+      const isPublic =
         (
-          path === '/auth/login' ||
-          path === '/auth/register' ||
-          path === '/auth/forgot-password' ||
-          path === '/auth/reset-password' ||
-          path === '/auth/patient-signup' ||
-          path === '/auth/verify-email' ||
-          path === '/auth/resend-verification'
-        )
-      ) ||
-      path === '/auth/protected' ||
-      path.startsWith('/reports/verify/');
+          request.method === 'POST' &&
+          (
+            path === '/auth/login' ||
+            path === '/auth/register' ||
+            path === '/auth/forgot-password' ||
+            path === '/auth/reset-password' ||
+            path === '/auth/patient-signup' ||
+            path === '/auth/verify-email' ||
+            path === '/auth/resend-verification'
+          )
+        ) ||
+        path === '/auth/protected' ||
+        path.startsWith('/reports/verify/');
 
-    if (isPublic) {
-      return next();
-    }
+      if (isPublic) {
+        return next();
+      }
 
-    const authorization = request.headers.authorization;
+      // ----------------------------------------------------------
+      // CHECK JWT TOKEN
+      // ----------------------------------------------------------
 
-    if (
-      typeof authorization !== 'string' ||
-      !authorization.startsWith('Bearer ')
-    ) {
-      return response.status(401).json({
-        message: 'Authentication is required',
-      });
-    }
+      const authorization = request.headers.authorization;
 
-    try {
-      const session = await fetch(
-        `${authServiceUrl}/auth/protected`,
-        {
-          headers: {
-            authorization,
-          },
-        },
-      );
-
-      if (!session.ok) {
+      if (
+        typeof authorization !== 'string' ||
+        !authorization.startsWith('Bearer ')
+      ) {
         return response.status(401).json({
-          message:
-            'Your session is no longer active. Please sign in again.',
+          message: 'Authentication is required',
         });
       }
 
-      return next();
-    } catch {
-      return response.status(503).json({
-        message: 'Authentication service is unavailable',
-      });
-    }
-  });
+      // ----------------------------------------------------------
+      // VALIDATE TOKEN THROUGH AUTH SERVICE
+      // ----------------------------------------------------------
+
+      try {
+        const session = await fetch(
+          `${authServiceUrl}/auth/protected`,
+          {
+            headers: {
+              authorization,
+            },
+          },
+        );
+
+        if (!session.ok) {
+          return response.status(401).json({
+            message:
+              'Your session is no longer active. Please sign in again.',
+          });
+        }
+
+        return next();
+      } catch {
+        return response.status(503).json({
+          message: 'Authentication service is unavailable',
+        });
+      }
+    },
+  );
 
   // ------------------------------------------------------------
   // BACKEND SERVICES
@@ -202,12 +228,17 @@ async function bootstrap() {
         target,
         changeOrigin: true,
 
+        // --------------------------------------------------------
         // Remove /api before forwarding.
         //
         // Example:
+        //
         // /api/patients/123
+        //
         // becomes:
+        //
         // /patients/123
+        // --------------------------------------------------------
 
         pathRewrite: (_path, request) =>
           request.originalUrl.replace(/^\/api/, ''),
