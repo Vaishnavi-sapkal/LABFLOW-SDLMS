@@ -12,11 +12,25 @@ async function bootstrap() {
   // CORS
   // ------------------------------------------------------------
 
+  const allowedOrigins = [
+    'https://labflow-f60a3.web.app',
+    'http://localhost:5173',
+  ];
+
   app.enableCors({
-    origin: [
-      'https://labflow-f60a3.web.app',
-      'http://localhost:5173',
-    ],
+    origin: (origin, callback) => {
+      // Allow requests without an Origin header
+      // such as health checks or server-to-server requests.
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error('Not allowed by CORS'), false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -45,6 +59,33 @@ async function bootstrap() {
     '/api',
     async (request: any, response: any, next: () => void) => {
       const path = request.path as string;
+
+      // ----------------------------------------------------------
+      // HANDLE CORS PREFLIGHT REQUESTS
+      // ----------------------------------------------------------
+
+      if (request.method === 'OPTIONS') {
+        const origin = request.headers.origin;
+
+        if (origin && allowedOrigins.includes(origin)) {
+          response.header('Access-Control-Allow-Origin', origin);
+          response.header(
+            'Access-Control-Allow-Credentials',
+            'true',
+          );
+          response.header(
+            'Access-Control-Allow-Methods',
+            'GET,POST,PATCH,PUT,DELETE,OPTIONS',
+          );
+          response.header(
+            'Access-Control-Allow-Headers',
+            'Content-Type, Authorization',
+          );
+          response.header('Vary', 'Origin');
+        }
+
+        return response.status(204).end();
+      }
 
       // ----------------------------------------------------------
       // PUBLIC ENDPOINTS
