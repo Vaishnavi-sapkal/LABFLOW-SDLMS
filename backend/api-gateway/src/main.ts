@@ -13,7 +13,10 @@ async function bootstrap() {
   // ------------------------------------------------------------
 
   app.enableCors({
-    origin: true,
+    origin: [
+      'https://labflow-f60a3.web.app',
+      'http://localhost:5173',
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -42,18 +45,6 @@ async function bootstrap() {
     '/api',
     async (request: any, response: any, next: () => void) => {
       const path = request.path as string;
-
-      // ----------------------------------------------------------
-      // HANDLE CORS PREFLIGHT REQUESTS
-      // ----------------------------------------------------------
-      //
-      // Browser sends OPTIONS before many cross-origin requests.
-      // We handle it at the API Gateway itself instead of forwarding
-      // it to individual backend services.
-      //
-      if (request.method === 'OPTIONS') {
-        return response.status(204).end();
-      }
 
       // ----------------------------------------------------------
       // PUBLIC ENDPOINTS
@@ -127,21 +118,6 @@ async function bootstrap() {
   // ------------------------------------------------------------
   // BACKEND SERVICES
   // ------------------------------------------------------------
-  //
-  // These ports match backend/start-all.sh
-  //
-  // Auth          -> 3001
-  // Patient       -> 3002
-  // Doctor        -> 3003
-  // Test          -> 3004
-  // Booking       -> 3005
-  // Sample        -> 3006
-  // Result        -> 3007
-  // Verification  -> 3008
-  // Billing       -> 3009
-  // Notification  -> 3010
-  // Report        -> 3011
-  // Dashboard     -> 3012
 
   const services = [
     {
@@ -149,67 +125,56 @@ async function bootstrap() {
       target:
         process.env.AUTH_SERVICE_URL ?? 'http://localhost:3001',
     },
-
     {
       prefix: '/api/patients',
       target:
         process.env.PATIENT_SERVICE_URL ?? 'http://localhost:3002',
     },
-
     {
       prefix: '/api/doctors',
       target:
         process.env.DOCTOR_SERVICE_URL ?? 'http://localhost:3003',
     },
-
     {
       prefix: '/api/tests',
       target:
         process.env.TEST_SERVICE_URL ?? 'http://localhost:3004',
     },
-
     {
       prefix: '/api/bookings',
       target:
         process.env.BOOKING_SERVICE_URL ?? 'http://localhost:3005',
     },
-
     {
       prefix: '/api/samples',
       target:
         process.env.SAMPLE_SERVICE_URL ?? 'http://localhost:3006',
     },
-
     {
       prefix: '/api/results',
       target:
         process.env.RESULT_SERVICE_URL ?? 'http://localhost:3007',
     },
-
     {
       prefix: '/api/verifications',
       target:
         process.env.VERIFICATION_SERVICE_URL ?? 'http://localhost:3008',
     },
-
     {
       prefix: '/api/billing',
       target:
         process.env.BILLING_SERVICE_URL ?? 'http://localhost:3009',
     },
-
     {
       prefix: '/api/notifications',
       target:
         process.env.NOTIFICATION_SERVICE_URL ?? 'http://localhost:3010',
     },
-
     {
       prefix: '/api/reports',
       target:
         process.env.REPORT_SERVICE_URL ?? 'http://localhost:3011',
     },
-
     {
       prefix: '/api/dashboard',
       target:
@@ -228,17 +193,11 @@ async function bootstrap() {
         target,
         changeOrigin: true,
 
-        // --------------------------------------------------------
         // Remove /api before forwarding.
         //
-        // Example:
-        //
         // /api/patients/123
-        //
-        // becomes:
-        //
+        // becomes
         // /patients/123
-        // --------------------------------------------------------
 
         pathRewrite: (_path, request) =>
           request.originalUrl.replace(/^\/api/, ''),
