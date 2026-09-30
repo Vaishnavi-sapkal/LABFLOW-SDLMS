@@ -21,6 +21,7 @@
     "scripts":  {
                     "validate":  "npm run validate:structure",
                     "validate:structure":  "node scripts/validate-structure.js",
+                    "validate:combined": "node scripts/validate-combined-container.js",
                     "test:services": "jest --config jest.config.js"
                 }
 }

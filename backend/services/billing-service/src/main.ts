@@ -5,7 +5,8 @@ async function bootstrap() {
   const app = await NestFactory.create(BillingModule);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   const config = new DocumentBuilder().setTitle('LabFlow Billing Service').setVersion('1.0').build(); SwaggerModule.setup('api', app, SwaggerModule.createDocument(app, config));
-  await app.listen(process.env.PORT ?? 3000);
+  const bindHost = process.env.BIND_HOST;
+  await (bindHost ? app.listen(process.env.PORT ?? 3000, bindHost) : app.listen(process.env.PORT ?? 3000));
 }
 
 void bootstrap();

@@ -1,0 +1,29 @@
+FROM node:20-alpine AS build
+
+WORKDIR /app
+COPY . .
+RUN npm ci --include=dev --workspaces --include-workspace-root \
+  && test -x node_modules/.bin/tsc
+RUN for workspace in \
+  @labflow/api-gateway @labflow/auth-service @labflow/patient-service \
+  @labflow/test-service @labflow/booking-service @labflow/doctor-service \
+  @labflow/sample-service @labflow/result-service @labflow/verification-service \
+  @labflow/billing-service @labflow/notification-service @labflow/report-service \
+  @labflow/dashboard-service; do npm run build --workspace="$workspace"; done
+RUN npm prune --omit=dev
+RUN mkdir -p /runtime/backend/api-gateway /runtime/backend/services /runtime/deploy \
+  && cp -R node_modules /runtime/node_modules \
+  && cp -R backend/api-gateway/dist /runtime/backend/api-gateway/dist \
+  && for service in auth-service patient-service test-service booking-service doctor-service sample-service result-service verification-service billing-service notification-service report-service dashboard-service; do \
+       mkdir -p "/runtime/backend/services/$service"; \
+       cp -R "backend/services/$service/dist" "/runtime/backend/services/$service/dist"; \
+     done \
+  && cp deploy/combined-supervisor.js /runtime/deploy/combined-supervisor.js
+
+FROM node:20-alpine AS runtime
+
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=build /runtime/ ./
+EXPOSE 10000
+CMD ["node", "deploy/combined-supervisor.js"]

@@ -20,6 +20,33 @@ async function bootstrap() {
     response.json({ status: 'ok', service: 'api-gateway' });
   });
 
+  const readinessChecks = [
+    process.env.AUTH_SERVICE_URL ?? 'http://127.0.0.1:3001',
+    process.env.PATIENT_SERVICE_URL ?? 'http://127.0.0.1:3002',
+    process.env.TEST_SERVICE_URL ?? 'http://127.0.0.1:3003',
+    process.env.BOOKING_SERVICE_URL ?? 'http://127.0.0.1:3004',
+    process.env.DOCTOR_SERVICE_URL ?? 'http://127.0.0.1:3005',
+    process.env.SAMPLE_SERVICE_URL ?? 'http://127.0.0.1:3006',
+    process.env.RESULT_SERVICE_URL ?? 'http://127.0.0.1:3007',
+    process.env.VERIFICATION_SERVICE_URL ?? 'http://127.0.0.1:3008',
+    process.env.BILLING_SERVICE_URL ?? 'http://127.0.0.1:3009',
+    process.env.NOTIFICATION_SERVICE_URL ?? 'http://127.0.0.1:3010',
+    process.env.REPORT_SERVICE_URL ?? 'http://127.0.0.1:3011',
+    process.env.DASHBOARD_SERVICE_URL ?? 'http://127.0.0.1:3012',
+  ];
+  const readinessPaths = ['/health', '/health', '/health', '/health', '/health', '/health', '/results/health', '/health', '/health', '/notifications/health', '/health', '/dashboard/health'];
+  app.getHttpAdapter().get('/ready', async (_request, response) => {
+    const checks = await Promise.all(readinessChecks.map(async (baseUrl, index) => {
+      try {
+        return (await fetch(`${baseUrl.replace(/\/$/, '')}${readinessPaths[index]}`, { signal: AbortSignal.timeout(2_000) })).ok;
+      } catch {
+        return false;
+      }
+    }));
+    if (checks.every(Boolean)) return response.json({ status: 'ready' });
+    return response.status(503).json({ status: 'starting' });
+  });
+
   // Services are not publicly exposed in the deployment topology. Validate every
   // non-public request at the gateway against auth-service so a deleted/disabled
   // user cannot continue using an otherwise valid JWT until it expires.

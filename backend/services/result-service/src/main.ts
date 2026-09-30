@@ -32,7 +32,8 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3000;
 
-  await app.listen(port);
+  const bindHost = process.env.BIND_HOST;
+  await (bindHost ? app.listen(port, bindHost) : app.listen(port));
 
   console.log(`Result Service running on port ${port}`);
   console.log(`Swagger: http://localhost:${port}/api`);
