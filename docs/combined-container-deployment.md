@@ -24,8 +24,10 @@ existing standalone and Compose network behavior.
 | report-service | 3011 | `/health` | `labflow-report` |
 | dashboard-service | 3012 | `/dashboard/health` | none |
 
-The supervisor starts all backend processes, waits up to 90 seconds for their
-health endpoints, then starts the gateway. It forwards named logs, exits on an
+The supervisor starts the public API gateway first, then starts all backend
+processes concurrently. This lets Render detect its assigned `PORT` while the
+private services connect to Atlas. It waits up to five minutes for the verified
+health endpoints, logs the failing URL and reason for each service, exits on an
 unexpected child exit, and sends SIGTERM to every child during shutdown.
 
 ## Required Render configuration
@@ -60,7 +62,9 @@ curl http://localhost:10000/ready
 
 Use a secure local `.env.combined` copied from the example. `/health` is a
 liveness endpoint; `/ready` verifies every required backend endpoint with a
-bounded two-second request timeout.
+bounded two-second request timeout. During cold start, `/health` is available
+as soon as the gateway listens while `/ready` remains `503` until every
+required service responds successfully.
 
 ## Render deployment and rollback
 

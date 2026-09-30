@@ -3,8 +3,10 @@
 const { spawn } = require('node:child_process');
 
 const LOOPBACK = '127.0.0.1';
-const READY_TIMEOUT_MS = Number(process.env.SERVICE_READY_TIMEOUT_MS || 90_000);
+const READY_TIMEOUT_MS = Number(process.env.SERVICE_READY_TIMEOUT_MS || 300_000);
 const READY_INTERVAL_MS = 1_000;
+const HEALTH_REQUEST_TIMEOUT_MS = Number(process.env.SERVICE_HEALTH_REQUEST_TIMEOUT_MS || 5_000);
+const HEALTH_LOG_INTERVAL_MS = Number(process.env.SERVICE_HEALTH_LOG_INTERVAL_MS || 10_000);
 
 const services = [
   { name: 'auth-service', port: 3001, entry: 'backend/services/auth-service/dist/main.js', health: '/health', database: 'labflow-auth' },
@@ -75,28 +77,43 @@ function startService(service) {
   });
 }
 
-async function isReady(service) {
+async function checkHealth(service) {
+  const url = `http://${LOOPBACK}:${service.port}${service.health}`;
   try {
-    const response = await fetch(`http://${LOOPBACK}:${service.port}${service.health}`, { signal: AbortSignal.timeout(2_000) });
-    return response.ok;
-  } catch {
-    return false;
+    const response = await fetch(url, { signal: AbortSignal.timeout(HEALTH_REQUEST_TIMEOUT_MS) });
+    if (response.ok) return { ready: true, url };
+    return { ready: false, url, reason: `HTTP ${response.status} ${response.statusText || 'response'}` };
+  } catch (error) {
+    const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    return { ready: false, url, reason };
   }
 }
 
 async function waitForServices() {
   const deadline = Date.now() + READY_TIMEOUT_MS;
   const pending = new Set(services.map((service) => service.name));
-  while (pending.size && Date.now() < deadline) {
+  const lastHealthLog = new Map();
+  while (pending.size && Date.now() < deadline && !stopping) {
     await Promise.all(services.filter((service) => pending.has(service.name)).map(async (service) => {
-      if (await isReady(service)) {
+      const health = await checkHealth(service);
+      if (health.ready) {
         pending.delete(service.name);
         console.log(`[supervisor] ${service.name} is ready`);
+        return;
+      }
+
+      const previous = lastHealthLog.get(service.name);
+      const now = Date.now();
+      if (!previous || previous.reason !== health.reason || now - previous.at >= HEALTH_LOG_INTERVAL_MS) {
+        lastHealthLog.set(service.name, { reason: health.reason, at: now });
+        console.warn(`[supervisor] waiting for ${service.name}: GET ${health.url} failed (${health.reason})`);
       }
     }));
     if (pending.size) await new Promise((resolve) => setTimeout(resolve, READY_INTERVAL_MS));
   }
+  if (stopping) return false;
   if (pending.size) throw new Error(`Timed out waiting for: ${[...pending].join(', ')}`);
+  return true;
 }
 
 function startGateway() {
@@ -144,10 +161,12 @@ process.on('SIGINT', () => shutdown(0));
 
 (async () => {
   try {
-    for (const service of services) startService(service);
-    await waitForServices();
+    // The gateway owns the only public Render port. Start it immediately so
+    // Render can detect the listener while the private services initialise.
     startGateway();
-    console.log('[supervisor] all services are ready; api-gateway started');
+    for (const service of services) startService(service);
+    const allReady = await waitForServices();
+    if (allReady) console.log('[supervisor] all internal services are ready; api-gateway /ready can report ready');
   } catch (error) {
     fail(error instanceof Error ? error.message : String(error));
   }

@@ -102,7 +102,10 @@ async function bootstrap() {
     );
   }
 
-  await app.listen(process.env.PORT ?? 3000);
+  // Render detects the public listener before the internal services have all
+  // connected.  /ready remains dependency-aware, while /health confirms that
+  // the gateway itself is accepting connections.
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
 
 void bootstrap();
